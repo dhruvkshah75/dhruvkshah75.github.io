@@ -1,0 +1,13 @@
+{
+  "errors": [],
+  "warnings": [],
+  "failures": [],
+  "captures": [
+    "night-start",
+    "night-middle",
+    "night-projects",
+    "night-projects-panel"
+  ],
+  "motion": "Wheel scrolling enters the forest with normal motion",
+  "interactions": "Projects marker, five project cards, Escape, restored focus, no overflow: passed"
+}

@@ -1,0 +1,35 @@
+{
+  "screenshots": [
+    {
+      "name": "start",
+      "path": "/home/dhruv/dhruvkshah75.github.io/screenshots/forest-dusk/start.png",
+      "scroll": 0
+    },
+    {
+      "name": "middle",
+      "path": "/home/dhruv/dhruvkshah75.github.io/screenshots/forest-dusk/middle.png",
+      "scroll": 0.5
+    },
+    {
+      "name": "projects-trail",
+      "path": "/home/dhruv/dhruvkshah75.github.io/screenshots/forest-dusk/projects-trail.png",
+      "scroll": 0.34
+    },
+    {
+      "name": "projects-panel",
+      "path": "/home/dhruv/dhruvkshah75.github.io/screenshots/forest-dusk/projects-panel.png",
+      "scroll": 0.34
+    },
+    {
+      "name": "mobile-low",
+      "path": "/home/dhruv/dhruvkshah75.github.io/screenshots/forest-dusk/mobile-low.png",
+      "scroll": 0
+    }
+  ],
+  "errors": [],
+  "network": [],
+  "warnings": [
+    "THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead."
+  ],
+  "interactions": "Projects navigation, marker, five project cards, Escape, focus restoration, no horizontal overflow: passed"
+}

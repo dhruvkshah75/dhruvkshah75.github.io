@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "skills": {
+    "threejs": {
+      "source": "MengTo/Skills",
+      "sourceType": "github",
+      "skillPath": "agent-skills/web-design/threejs/SKILL.md",
+      "computedHash": "244a4d8c672a50dd76537d363c20120369153f63951549c748264b1114286ec3"
+    }
+  }
+}

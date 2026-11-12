@@ -1,0 +1,297 @@
+{
+  "method": "Mean Rec.709 weighted display RGB luma / 255; this is screenshot brightness, not linear-light relative luminance. Full viewport includes UI. Dialog measured separately and excluded from scene target.",
+  "target_display_luma_percent": [
+    12,
+    25
+  ],
+  "images": {
+    "day-middle": {
+      "rgb": [
+        100.27,
+        132.64,
+        74.39
+      ],
+      "display_luma_percent": 47.67,
+      "linear_luminance_percent": 24.22
+    },
+    "day-projects": {
+      "rgb": [
+        83.34,
+        116.33,
+        64.81
+      ],
+      "display_luma_percent": 41.41,
+      "linear_luminance_percent": 19.59
+    },
+    "day-start": {
+      "rgb": [
+        90.48,
+        125.38,
+        71.17
+      ],
+      "display_luma_percent": 44.72,
+      "linear_luminance_percent": 21.27
+    },
+    "dusk-middle": {
+      "rgb": [
+        47.81,
+        69.97,
+        35.9
+      ],
+      "display_luma_percent": 24.63,
+      "linear_luminance_percent": 6.92
+    },
+    "dusk-projects": {
+      "rgb": [
+        40.69,
+        63.55,
+        32.92
+      ],
+      "display_luma_percent": 22.15,
+      "linear_luminance_percent": 5.97
+    },
+    "dusk-start": {
+      "rgb": [
+        44.62,
+        68.49,
+        35.71
+      ],
+      "display_luma_percent": 23.94,
+      "linear_luminance_percent": 6.87
+    },
+    "night-middle": {
+      "rgb": [
+        24.42,
+        38.07,
+        23.61
+      ],
+      "display_luma_percent": 13.38,
+      "linear_luminance_percent": 2.56,
+      "regions": {
+        "sky": {
+          "rgb": [
+            9.12,
+            18.3,
+            27.12
+          ],
+          "display_luma_percent": 6.66,
+          "bounds": [
+            710,
+            20,
+            800,
+            125
+          ]
+        },
+        "foliage": {
+          "rgb": [
+            1.67,
+            14.88,
+            7.82
+          ],
+          "display_luma_percent": 4.53,
+          "bounds": [
+            1010,
+            85,
+            1190,
+            155
+          ]
+        },
+        "near_path": {
+          "rgb": [
+            96.0,
+            68.32,
+            58.93
+          ],
+          "display_luma_percent": 28.83,
+          "bounds": [
+            630,
+            745,
+            850,
+            880
+          ]
+        },
+        "distant_path": {
+          "rgb": [
+            32.47,
+            42.63,
+            44.34
+          ],
+          "display_luma_percent": 15.92,
+          "bounds": [
+            708,
+            471,
+            754,
+            492
+          ]
+        }
+      },
+      "brightness_pass": true,
+      "foliage_green_dominant": true,
+      "sky_blue_dominant": true,
+      "near_path_brighter": true,
+      "near_path_warmer": true
+    },
+    "night-mobile": {
+      "rgb": [
+        46.34,
+        47.02,
+        36.56
+      ],
+      "display_luma_percent": 18.09,
+      "linear_luminance_percent": 4.7
+    },
+    "night-projects-panel": {
+      "rgb": [
+        14.73,
+        23.81,
+        20.36
+      ],
+      "display_luma_percent": 8.48,
+      "linear_luminance_percent": 1.61
+    },
+    "night-projects": {
+      "rgb": [
+        21.46,
+        34.62,
+        20.74
+      ],
+      "display_luma_percent": 12.08,
+      "linear_luminance_percent": 2.17,
+      "regions": {
+        "sky": {
+          "rgb": [
+            9.51,
+            24.45,
+            28.66
+          ],
+          "display_luma_percent": 8.46,
+          "bounds": [
+            710,
+            20,
+            800,
+            125
+          ]
+        },
+        "foliage": {
+          "rgb": [
+            1.87,
+            26.83,
+            13.19
+          ],
+          "display_luma_percent": 8.05,
+          "bounds": [
+            1010,
+            85,
+            1190,
+            155
+          ]
+        },
+        "near_path": {
+          "rgb": [
+            82.76,
+            57.94,
+            51.14
+          ],
+          "display_luma_percent": 24.6,
+          "bounds": [
+            630,
+            745,
+            850,
+            880
+          ]
+        },
+        "distant_path": {
+          "rgb": [
+            43.44,
+            42.86,
+            48.29
+          ],
+          "display_luma_percent": 17.01,
+          "bounds": [
+            708,
+            471,
+            754,
+            492
+          ]
+        }
+      },
+      "brightness_pass": true,
+      "foliage_green_dominant": true,
+      "sky_blue_dominant": true,
+      "near_path_brighter": true,
+      "near_path_warmer": true
+    },
+    "night-start": {
+      "rgb": [
+        25.55,
+        38.37,
+        22.66
+      ],
+      "display_luma_percent": 13.53,
+      "linear_luminance_percent": 3.12,
+      "regions": {
+        "sky": {
+          "rgb": [
+            9.22,
+            13.68,
+            25.41
+          ],
+          "display_luma_percent": 5.33,
+          "bounds": [
+            710,
+            20,
+            800,
+            125
+          ]
+        },
+        "foliage": {
+          "rgb": [
+            5.4,
+            22.28,
+            7.6
+          ],
+          "display_luma_percent": 6.91,
+          "bounds": [
+            1010,
+            85,
+            1190,
+            155
+          ]
+        },
+        "near_path": {
+          "rgb": [
+            78.06,
+            47.87,
+            33.79
+          ],
+          "display_luma_percent": 20.89,
+          "bounds": [
+            630,
+            745,
+            850,
+            880
+          ]
+        },
+        "distant_path": {
+          "rgb": [
+            41.34,
+            41.25,
+            44.7
+          ],
+          "display_luma_percent": 16.28,
+          "bounds": [
+            708,
+            471,
+            754,
+            492
+          ]
+        }
+      },
+      "brightness_pass": true,
+      "foliage_green_dominant": true,
+      "sky_blue_dominant": true,
+      "near_path_brighter": true,
+      "near_path_warmer": true
+    }
+  }
+}
