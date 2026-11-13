@@ -317,6 +317,10 @@ body:not(.at-home) #pixel-field{opacity:.44}
 #pixel-field,body:not(.at-home) #pixel-field{opacity:clamp(0,calc(.1 + var(--hero-presence)*.7 + var(--project-presence)*.3 + var(--contact-presence)*.32 + var(--pixel-transition)*.45 + var(--section-grid,0)*.65),.9)}
 
 @media(prefers-reduced-motion:reduce){.color-wash{opacity:var(--wash)}.about,.experience{background:transparent}}
+#hero-cubes{position:fixed;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;opacity:0}
+.hero-copy{opacity:clamp(0,calc(1 - var(--exit-home)*4),1)}
+@media(prefers-reduced-motion:reduce){#hero-cubes{display:none}}
+@media(prefers-reduced-motion:reduce){.hero-copy{opacity:1}}
 
 /* Match the project-to-experience pixel fill to the hero transition. */
 #project-transition{height:65svh}

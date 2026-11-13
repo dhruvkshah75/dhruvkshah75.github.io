@@ -127,3 +127,4 @@ updateActiveNav();
 
 
 import('./visuals.js');
+import('./hero-transition.js');
