@@ -24,9 +24,18 @@ projects.forEach((project,index)=>{
   stage.append(card);
 });
 const cards=[...document.querySelectorAll('.project-card')];
+let heroCubeProgress = null;
+document.addEventListener('hero-transition-progress', event => {
+  heroCubeProgress = event.detail;
+  updateProjects();
+});
 function updateProjects(){
+  const aboutElement=document.querySelector('#about');
+  aboutElement.style.setProperty('--about-pin-top', `${Math.min(0,innerHeight-aboutElement.offsetHeight)}px`);
   const about=document.querySelector('#about').getBoundingClientRect();
-  const experience=document.querySelector('#experience').getBoundingClientRect();
+  const experienceElement=document.querySelector('#experience');
+  experienceElement.style.setProperty('--experience-pin-top', `${Math.min(0,innerHeight-experienceElement.offsetHeight)}px`);
+  const experience=experienceElement.getBoundingClientRect();
   const contact=document.querySelector('#contact').getBoundingClientRect();
   const homeGap=document.querySelector('#home-transition').getBoundingClientRect();
   const projectGap=document.querySelector('#project-transition').getBoundingClientRect();
@@ -38,22 +47,26 @@ function updateProjects(){
   // Hold the full grid while a section occupies the screen, then ease it out
   // over the entire departure instead of switching to the edge texture midway.
   const smooth=value=>{const x=clamp(value);return x*x*(3-2*x)};
-  const gridPresence=bounds=>smooth((vh-bounds.top)/(vh*.65))*smooth(bounds.bottom/(vh*.65));
-  const sectionGrid=Math.max(gridPresence(about),gridPresence(experience));
+  const gridPresence=(bounds,departure=.65)=>smooth((vh-bounds.top)/(vh*.65))*smooth(bounds.bottom/(vh*departure));
+  const homeArrival=reducedMotion.matches||heroCubeProgress===null?1:smooth((heroCubeProgress-.76)/.15);
+  const sectionGrid=Math.max(gridPresence(about)*homeArrival,gridPresence(experience,.75));
   // First clear the current screen, then draw the pixel front inward across a dedicated gap.
-  const transition=bounds=>{
+  const transition=(bounds,fillStart=.25,clock=null)=>{
     if(bounds.top>vh || bounds.bottom<=0 || reducedMotion.matches)return {exit:0,fill:0,hold:0};
     const span=Math.max(1,bounds.height);
-    const progress=clamp((vh-bounds.top)/span);
+    const progress=clock===null?clamp((vh-bounds.top)/span):clock;
     const exit=clamp(progress/.6);
-    const fill=clamp((progress-.25)/.75);
+    const fill=clamp((progress-fillStart)/(1-fillStart));
     return {exit,fill,hold:fill*clamp(bounds.bottom/span)};
   };
-  const home=transition(homeGap),project=transition(projectGap);
-  const fill=Math.max(home.fill,project.fill);
-  const wash=Math.max(sectionGrid,home.hold,project.hold);
-  document.documentElement.style.setProperty('--about-reveal',String(clamp((vh-about.top)/(vh*.3))));
+  const home=transition(homeGap,.40,heroCubeProgress),project=transition(projectGap);
+  const fill=Math.max(heroCubeProgress===null?home.fill:0,project.fill);
+  const homeWash=heroCubeProgress===null?home.hold:home.hold*smooth((heroCubeProgress-.72)/.18);
+  const wash=Math.max(sectionGrid,homeWash,project.hold);
+  // About owns a stable sticky reading stage; no fixed/flow positioning switches.
+  document.documentElement.style.setProperty('--about-reveal',String(clamp((vh-about.top)/(vh*.45))*homeArrival));
   document.documentElement.style.setProperty('--experience-reveal',String(clamp((vh-experience.top)/(vh*.3))));
+  document.documentElement.style.setProperty('--experience-departure',String(reducedMotion.matches?1:smooth(experience.bottom/(vh*.85))));
   document.documentElement.style.setProperty('--exit-home',String(home.exit));
   // Use the same exit timing as the hero while the pixel border fills inward.
   document.documentElement.style.setProperty('--exit-project',String(project.exit));
@@ -63,7 +76,7 @@ function updateProjects(){
   document.documentElement.style.setProperty('--section-grid',String(sectionGrid));
   document.documentElement.style.setProperty('--project-presence',String(projectPresence));
   document.documentElement.style.setProperty('--contact-presence',String(visibility(contact)));
-  document.documentElement.style.setProperty('--hero-presence',String(clamp(1-window.scrollY/(vh*.85))));
+  document.documentElement.style.setProperty('--hero-presence',String(Math.max(clamp(1-window.scrollY/(vh*.85)),homeGap.top<=vh&&homeGap.bottom>0?1-home.fill:0)));
   if(reducedMotion.matches){cards.forEach(card=>{card.removeAttribute('aria-hidden');card.tabIndex=0});return}
   // Reserve the end of the pinned section for cfast to settle before its exit.
   const range=Math.max(1,section.offsetHeight-window.innerHeight*1.8);
@@ -90,15 +103,32 @@ function openProject(index){
   showProjectBackground(index);
   dialog.showModal();document.body.style.overflow='hidden';
 }
-document.querySelector('.nav a[href="#home"]').addEventListener('click', event=>{
+function navigationTop(id){
+  if(id==='home')return 0;
+  if(id==='about'){
+    const intro=document.querySelector('.intro-sequence');
+    return scrollY+intro.getBoundingClientRect().top
+      +document.querySelector('.hero-frame').offsetHeight-innerHeight;
+  }
+  // Sticky sections move inside their frames; the frames retain stable anchors.
+  const target=id==='experience'?document.querySelector('.experience-frame'):document.getElementById(id);
+  return scrollY+target.getBoundingClientRect().top;
+}
+function navigateTo(id,{behavior=reducedMotion.matches?'instant':'smooth',replaceHash=true}={}){
+  const top=Math.max(0,navigationTop(id));
+  if(replaceHash)history.replaceState(null,'',`#${id}`);
+  document.dispatchEvent(new CustomEvent('portfolio:navigate',{detail:{section:id,top}}));
+  window.scrollTo({top,behavior});
+  updateProjects();
+  updateActiveNav();
+}
+document.querySelectorAll('.nav a').forEach(link=>link.addEventListener('click',event=>{
   event.preventDefault();
-  history.replaceState(null, '', '#home');
-  window.scrollTo({top:0,behavior:reducedMotion.matches?'auto':'smooth'});
-});
-document.querySelector('footer a[href="#home"]').addEventListener('click', event=>{
+  navigateTo(link.hash.slice(1));
+}));
+document.querySelector('footer a[href="#home"]').addEventListener('click',event=>{
   event.preventDefault();
-  history.replaceState(null, '', '#home');
-  window.scrollTo({top:0,behavior:reducedMotion.matches?'auto':'smooth'});
+  navigateTo('home');
 });
 document.querySelector('#close-dialog').addEventListener('click',()=>dialog.close());
 dialog.addEventListener('close',()=>{hideProjectBackground();document.body.style.overflow='';lastFocus?.focus({preventScroll:true})});
@@ -110,7 +140,7 @@ function updateActiveNav(){
   const experience=document.querySelector('#experience').getBoundingClientRect();
   const projects=section.getBoundingClientRect();
   const nearBottom=window.scrollY+window.innerHeight>=document.documentElement.scrollHeight-4;
-  let active='home';
+  let active='about';
   if(projects.top<=threshold)active='projects';
   if(experience.top<=threshold)active='experience';
   if(contact.top<=threshold||nearBottom)active='contact';
@@ -124,7 +154,17 @@ window.addEventListener('scroll',updateActiveNav,{passive:true});
 window.addEventListener('resize',updateActiveNav);
 updateActiveNav();
 
-
+// Resolve direct section links after fonts have settled the section heights.
+const initialSection=location.hash.slice(1);
+if(['about','projects','experience','contact'].includes(initialSection)){
+  document.fonts.ready.then(()=>{
+    if(location.hash===`#${initialSection}`)navigateTo(initialSection,{behavior:'instant',replaceHash:false});
+  });
+}
+window.addEventListener('hashchange',()=>{
+  const id=location.hash.slice(1);
+  if(['home','about','projects','experience','contact'].includes(id))navigateTo(id,{replaceHash:false});
+});
 
 import('./visuals.js');
 import('./hero-transition.js');
