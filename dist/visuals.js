@@ -13,11 +13,11 @@ try {
   const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:false, powerPreference:'high-performance'});
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-1,1,1,-1,.1,10); camera.position.z=1;
-  const uniforms = {uTime:{value:0}, uResolution:{value:new THREE.Vector2()}, uMouse:{value:pointer}, uDpr:{value:1}, uHome:{value:1}, uProject:{value:0}, uContact:{value:0}, uFill:{value:0}, uSection:{value:0}, uCell:{value:15}};
+  const uniforms = {uTime:{value:0}, uResolution:{value:new THREE.Vector2()}, uMouse:{value:pointer}, uDpr:{value:1}, uHome:{value:1}, uProject:{value:0}, uContact:{value:0}, uFill:{value:0}, uSection:{value:0}, uCell:{value:15}, uHeroFlight:{value:0}, uHeroArrival:{value:0}};
   const material = new THREE.ShaderMaterial({transparent:true, depthWrite:false, uniforms,
     vertexShader:`
       attribute float seed;
-      uniform float uTime; uniform vec2 uResolution; uniform vec2 uMouse; uniform float uDpr; uniform float uHome; uniform float uProject; uniform float uContact; uniform float uFill; uniform float uSection; uniform float uCell;
+      uniform float uTime; uniform vec2 uResolution; uniform vec2 uMouse; uniform float uDpr; uniform float uHome; uniform float uProject; uniform float uContact; uniform float uFill; uniform float uSection; uniform float uCell; uniform float uHeroFlight; uniform float uHeroArrival;
       varying float vAlpha; varying float vSeed;
       void main(){
         vec2 px=(position.xy*.5+.5)*uResolution;
@@ -33,7 +33,9 @@ try {
         float nearMouse=1.0-smoothstep(0.0,170.0,distance(px,uMouse));
         float density=smoothstep(.04,.36,seed+band*.65);
         vAlpha=band*density*(.29+activeEdge*twinkle*.25+nearMouse*.44);
-        vAlpha=mix(vAlpha,.18+seed*.16+nearMouse*.38,uSection);
+        vAlpha*=1.-smoothstep(.12,.48,uHeroFlight);
+        float arrivalCell=smoothstep(seed*.55,seed*.55+.45,uHeroArrival);
+        vAlpha=mix(vAlpha,.18+seed*.16+nearMouse*.38,max(uSection,arrivalCell));
         vSeed=seed;
         gl_PointSize=uCell*uDpr*mix(mix(1.01,.65+twinkle*.46,activeEdge)*(1.0+nearMouse*.08),1.01,uSection);
         gl_Position=vec4(position,1.0);
@@ -62,7 +64,7 @@ try {
     points=new THREE.Points(geometry,material);scene.add(points);
   }
   resize();window.addEventListener('resize',resize);
-  renderer.setAnimationLoop(now=>{uniforms.uTime.value=reduceMotion.matches?0:now*.001;uniforms.uHome.value=document.body.classList.contains('at-home')?1:0;uniforms.uProject.value=Number.parseFloat(document.documentElement.style.getPropertyValue('--project-presence'))||0;uniforms.uContact.value=Number.parseFloat(document.documentElement.style.getPropertyValue('--contact-presence'))||0;const sectionTarget=Number.parseFloat(document.documentElement.style.getPropertyValue('--section-grid'))||0;uniforms.uSection.value=reduceMotion.matches?sectionTarget:THREE.MathUtils.lerp(uniforms.uSection.value,sectionTarget,.08);uniforms.uFill.value=Math.max(reduceMotion.matches?0:Number.parseFloat(document.documentElement.style.getPropertyValue('--pixel-fill'))||0,uniforms.uSection.value);renderer.render(scene,camera)});
+  renderer.setAnimationLoop(now=>{uniforms.uHeroArrival.value=reduceMotion.matches?0:parseFloat(document.documentElement.style.getPropertyValue('--hero-pixel-arrival'))||0;uniforms.uHeroFlight.value=reduceMotion.matches?0:parseFloat(document.documentElement.style.getPropertyValue('--hero-pixel-flight'))||0;uniforms.uTime.value=reduceMotion.matches?0:now*.001;uniforms.uHome.value=document.body.classList.contains('at-home')?1:0;uniforms.uProject.value=Number.parseFloat(document.documentElement.style.getPropertyValue('--project-presence'))||0;uniforms.uContact.value=Number.parseFloat(document.documentElement.style.getPropertyValue('--contact-presence'))||0;const sectionTarget=Number.parseFloat(document.documentElement.style.getPropertyValue('--section-grid'))||0;uniforms.uSection.value=reduceMotion.matches?sectionTarget:THREE.MathUtils.lerp(uniforms.uSection.value,sectionTarget,.08);uniforms.uFill.value=reduceMotion.matches?0:Number.parseFloat(document.documentElement.style.getPropertyValue('--pixel-fill'))||0;renderer.render(scene,camera)});
 }catch(error){console.warn('Pixel field unavailable:',error)}
 
 // A single shared WebGL renderer paints five small, distinct scenes into card canvases.
