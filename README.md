@@ -12,6 +12,10 @@ python3 -m http.server 4173 --directory dist
 
 Open `http://localhost:4173` in a browser. No build or package installation is required.
 
+## GitHub Pages
+
+The workflow in `.github/workflows/pages.yml` publishes the contents of `dist` on pushes to `master`. In the repository's **Settings → Pages**, set **Build and deployment → Source** to **GitHub Actions**. Push the workflow to `master`, then check the **Actions** tab for the deployment. It can also be started manually using **Run workflow**.
+
 ## Editing
 
 - `dist/index.html` contains the page content and structure.
