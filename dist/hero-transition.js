@@ -248,7 +248,9 @@ if (canvas && gap && copy && !reducedMotion.matches) {
       const aboutRect = document.querySelector('#about').getBoundingClientRect();
       root.setProperty('--hero-pixel-flight', String(aboutRect.top > 0 ? progress : 0));
       root.setProperty('--hero-pixel-arrival', String(aboutRect.top > 0 ? smooth((progress - .64) / .28) : 0));
-      if (progress >= .995 && !arrivalReadyAt) arrivalReadyAt = performance.now();
+      // The About content is fully revealed by .91. Release the scroll gate at
+      // that point instead of waiting for the easing tail to approach 1.
+      if (progress >= .91 && !arrivalReadyAt) arrivalReadyAt = performance.now();
       if (progress < .4) { arrivalReadyAt = 0; arrivalReleased = false; }
       canvas.style.opacity = !reducedMotion.matches && progress > 0 && progress < .94 ? '1' : '0';
       document.dispatchEvent(new CustomEvent('hero-transition-progress', { detail: progress }));
@@ -298,7 +300,7 @@ if (canvas && gap && copy && !reducedMotion.matches) {
       const anchor = arrivalAnchor();
       const crossedArrival = previousScroll <= anchor + 2 && scrollY > anchor + 2;
       if (crossedArrival && !reducedMotion.matches && !arrivalReleased && !navigationSkip) {
-        if (arrivalReadyAt && performance.now() - arrivalReadyAt > 420) arrivalReleased = true;
+        if (arrivalReadyAt) arrivalReleased = true;
         else window.scrollTo({ top: anchor, behavior: 'instant' });
       }
       previousScroll = scrollY;
@@ -310,7 +312,7 @@ if (canvas && gap && copy && !reducedMotion.matches) {
     }
     function protectArrival(event, delta) {
       if (reducedMotion.matches || arrivalReleased || navigationSkip || delta <= 0 || event.ctrlKey || document.querySelector('dialog[open]')) return;
-      if (arrivalReadyAt && performance.now() - arrivalReadyAt > 420) {
+      if (arrivalReadyAt) {
         arrivalReleased = true;
         return;
       }
