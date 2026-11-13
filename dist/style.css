@@ -342,3 +342,11 @@ body:not(.at-home) #pixel-field{opacity:.44}
   .experience{position:relative}
   .experience .section-inner{opacity:1}
 }
+
+/* Expanded TaskFlow details */
+#project-dialog .dialog-features{margin:22px 0 0;padding-left:1.2em;max-width:540px;color:#53655c;font-size:15px;line-height:1.5}
+#project-dialog .dialog-features[hidden]{display:none}
+#project-dialog .dialog-features li+li{margin-top:10px}
+#project-dialog .dialog-features strong{color:#263b30;font-weight:700}
+#project-dialog[data-project="taskflow"] .dialog-aside{margin-top:22px}
+@media(max-width:700px){#project-dialog .dialog-features{font-size:14px;line-height:1.5;margin-top:18px}#project-dialog .dialog-features li+li{margin-top:9px}}

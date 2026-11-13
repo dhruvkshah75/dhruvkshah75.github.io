@@ -2,8 +2,8 @@ import * as THREE from './assets/three.module.js';
 import { showProjectBackground, hideProjectBackground } from './project-background.js';
 
 const projects = [
-  {name:'taskflow',category:'SYSTEMS',tags:['systems','distributed-systems','job-scheduler','task queue'],description:'Distributed background task processing, built for scalable asynchronous workloads.',stack:'Python · Docker · Kubernetes · FastAPI',github:'https://github.com/dhruvkshah75/TaskFlow',live:'https://taskflow-io.vercel.app'},
-  {name:'oxidrop',category:'TOOLS',tags:['tools','file sharing','file server','self-hosted'],description:'Fast wireless file sync between Linux and mobile devices.',stack:'Rust · WebDAV',github:'https://github.com/dhruvkshah75/oxidrop'},
+  {name:'taskflow',category:'SYSTEMS',tags:['systems','distributed-systems','job-scheduler','task queue'],description:'Distributed background task processing, built for scalable asynchronous workloads.',features:[['Background Processing','Distributed background task processing, built for scalable asynchronous workloads.'],['Dynamic Execution','Runs uploaded Python scripts on demand without container rebuilds or redeployments.'],['Event-Driven Autoscaling','Scales workers based on live queue depth with graceful shutdowns for active jobs.'],['Fault-Tolerant HA','Guarantees at-least-once delivery via leader election, crash recovery, and strict state consistency.']],stack:'Python · Docker · Kubernetes · FastAPI',github:'https://github.com/dhruvkshah75/TaskFlow',live:'https://taskflow-io.vercel.app'},
+  {name:'oxidrop',category:'TOOLS',tags:['tools','file sharing','file server','self-hosted'],description:'Fast wireless file sync between Linux and mobile devices.',features:[['Wireless File Sync','Fast wireless file sync between Linux and mobile devices.'],['Local Transfers','Moves files directly over local Wi-Fi or a mobile hotspot without needing internet access or third-party cloud uploads.']],stack:'Rust · WebDAV',github:'https://github.com/dhruvkshah75/oxidrop'},
   {name:'gamesync',category:'GAMES · IN PROGRESS',tags:['websockets','2d-game','concurrency'],description:'A real-time multiplayer game server for state synchronisation and concurrent player communication.',stack:'Go · Sockets',github:'https://github.com/dhruvkshah75/gamesync'},
   {name:'groundtruth',category:'AI',tags:['AI','ai-agents','knowledge-graph','belief-revision'],description:'An AI agent that checks beliefs against reality, detects conflicts, and reasons across perspectives.',stack:'Python · SQLite · NetworkX',github:'https://github.com/dhruvkshah75/groundtruth'},
   {name:'cfast',category:'TOOLS',tags:['cli','test-runner','competitve-companion'],description:'Import Codeforces samples, compile C++ solutions, and check outputs, time, and memory.',stack:'Python · CLI',github:'https://github.com/dhruvkshah75/cfast',live:'https://cfast.vercel.app'}
@@ -96,7 +96,19 @@ function openProject(index){
   const p=projects[index];lastFocus=document.activeElement;dialog.dataset.project=p.name.toLowerCase();
 
   document.querySelector('#dialog-title').textContent=p.name;
-  document.querySelector('#dialog-description').textContent=p.description;
+  const description=document.querySelector('#dialog-description');
+  const features=document.querySelector('#dialog-features');
+  description.hidden=Boolean(p.features);
+  description.textContent=p.description;
+  features.hidden=!p.features;
+  features.replaceChildren();
+  p.features?.forEach(([label,detail])=>{
+    const item=document.createElement('li');
+    const heading=document.createElement('strong');
+    heading.textContent=`${label}: `;
+    item.append(heading,document.createTextNode(detail));
+    features.append(item);
+  });
   document.querySelector('#dialog-stack').textContent=p.stack;
   document.querySelector('#dialog-github').href=p.github;
   const live=document.querySelector('#dialog-live');live.hidden=!p.live;if(p.live)live.href=p.live;
