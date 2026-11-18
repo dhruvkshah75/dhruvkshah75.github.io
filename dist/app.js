@@ -1,6 +1,6 @@
 import { createSectionTransition } from './section-transition.js?v=revision';
-import { drawExperienceSignal } from './experience-transition.js?v=charcoal';
-import { showProjectBackground, hideProjectBackground } from './project-background.js?v=charcoal';
+import { drawExperienceSignal } from './experience-transition.js?v=blue';
+import { showProjectBackground, hideProjectBackground } from './project-background.js?v=blue';
 
 const projects = [
   {
@@ -106,7 +106,7 @@ function loadProjectArt() {
 }
 let stackLoad;
 function loadStack() {
-  return stackLoad ??= import('./processor.js?v=revision').then(module=>module.startProcessor()).catch(error=>{
+  return stackLoad ??= import('./processor.js?v=blue').then(module=>module.startProcessor()).catch(error=>{
     console.warn('Processor illustration unavailable',error);
   });
 }
@@ -250,9 +250,12 @@ async function prepareIntro() {
     });
   }
   await Promise.all([
-    track('interface',document.fonts.load('500 24px "DM Sans"'),()=> 'Ready'),
-    track('field',import('./visuals.js?v=charcoal'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
-    track('scene',import('./hero-transition.js?v=charcoal').then(module=>module.ready),
+    track('interface',Promise.all([
+      document.fonts.load('500 24px "DM Sans"'),
+      document.fonts.load('570 24px Geist')
+    ]),()=> 'Ready'),
+    track('field',import('./visuals.js?v=blue'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
+    track('scene',import('./hero-transition.js?v=blue').then(module=>module.ready),
       ()=> root.classList.contains('has-fracture')?'Online':'Static')
   ]);
   const id=location.hash.slice(1);

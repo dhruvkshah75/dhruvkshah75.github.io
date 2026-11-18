@@ -210,7 +210,6 @@ export async function startProcessor() {
   Object.assign(light.shadow.camera,{left:-6,right:6,top:7,bottom:-7,near:.1,far:26});
   light.shadow.normalBias=.012;light.shadow.bias=-.0003;scene.add(light);
   const camera = new THREE.OrthographicCamera(-4,4,3,-3,.1,65);
-  camera.position.set(5.2,6.8,8.2);camera.lookAt(0,0,0);
   const {assembly,layers} = buildProcessor();
   assembly.traverse(part=>{if(part.isMesh){part.castShadow=true;part.receiveShadow=true}});
   scene.add(assembly);
@@ -222,7 +221,7 @@ export async function startProcessor() {
     return label;
   });
   const axis = new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-5.15,0),new THREE.Vector3(0,5.0,0)]),
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,stages.at(-1).height[0],0),new THREE.Vector3(0,5.0,0)]),
     new THREE.LineDashedMaterial({color:0x537e6e,dashSize:.08,gapSize:.09,transparent:true,opacity:0})
   );
   axis.computeLineDistances();
@@ -237,12 +236,13 @@ export async function startProcessor() {
   shadow.rotation.x=-Math.PI/2;scene.add(shadow);
   const orbit = new THREE.Spherical();
   const defaultYaw = .64;
-  let yaw=defaultYaw,pitch=0,goalYaw=defaultYaw,goalPitch=0;
+  const elevation = .39; // Keep the top surfaces visible throughout the horizontal orbit.
+  let yaw=defaultYaw,goalYaw=defaultYaw;
   let frame=0,last=0,width=0,height=0,lost=false,layoutDirty=true,progress=0,targetProgress=0,visible=false;
   let touch;
   const angle = Math.PI * 2;
   stack.tabIndex=0;
-  stack.setAttribute('aria-label','Processor model. Move the pointer or use arrow keys to rotate.');
+  stack.setAttribute('aria-label','Processor model. Scroll to separate the layers. Move horizontally or use the Left and Right arrow keys to rotate.');
   stack.setAttribute('role','group');
 
   function measure() {
@@ -267,15 +267,13 @@ export async function startProcessor() {
       const dt=Math.min(80,now-last);last=now;
       progress=mix(progress,targetProgress,reduced.matches?1:1-Math.exp(-dt*.021));
       if(Math.abs(progress-targetProgress)<.002)progress=targetProgress;
-      const span=Math.max(mix(5.2,12.35,progress),6.9*height/width);
+      const span=Math.max(mix(5.2,12.65,progress),6.9*height/width);
       const showLabels=width>505 ? smooth(.76,1,progress) : 0;
       const shift=showLabels*.64;
       camera.left=-span*width/height/2+shift;camera.right=span*width/height/2+shift;
       camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();
       const damping=reduced.matches?1:1-Math.exp(-dt*.014);
       yaw=mix(yaw,goalYaw,damping);
-      pitch=mix(pitch,goalPitch,damping);
-      const elevation=mix(.60,.33,progress)+pitch;
       orbit.set(14,Math.PI/2-elevation,yaw);
       camera.position.setFromSpherical(orbit);
       camera.lookAt(0,0,0);
@@ -300,7 +298,7 @@ export async function startProcessor() {
       renderer.render(scene,camera);
       document.documentElement.classList.add('has-chip');
     }
-    if(!reduced.matches&&(progress!==targetProgress||Math.abs(yaw-goalYaw)+Math.abs(pitch-goalPitch)>.002))frame=requestAnimationFrame(draw);
+    if(!reduced.matches&&(progress!==targetProgress||Math.abs(yaw-goalYaw)>.002))frame=requestAnimationFrame(draw);
   }
   function invalidate(){layoutDirty=true;if(!frame)frame=requestAnimationFrame(draw)}
   stack.addEventListener('pointermove',event=>{
@@ -310,13 +308,12 @@ export async function startProcessor() {
     } else {
       const rect=stack.getBoundingClientRect();
       goalYaw=defaultYaw+((event.clientX-rect.left)/rect.width-.5)*angle;
-      goalPitch=(.5-(event.clientY-rect.top)/rect.height)*.42;
     }
     invalidate();
   },{passive:true});
   stack.addEventListener('pointerleave',()=>{
     if(touch)return;
-    goalYaw=defaultYaw;goalPitch=0;invalidate();
+    goalYaw=defaultYaw;invalidate();
   });
   stack.addEventListener('pointerdown',event=>{
     if(event.pointerType==='touch'){
@@ -326,12 +323,9 @@ export async function startProcessor() {
   });
   for(const type of ['pointercancel','pointerup'])stack.addEventListener(type,()=>{touch=null});
   stack.addEventListener('keydown',event=>{
-    const directions={ArrowLeft:[-.24,0],ArrowRight:[.24,0],ArrowUp:[0,.09],ArrowDown:[0,-.09]};
-    const move=directions[event.key];
-    if(!move)return;
+    if(event.key!=='ArrowLeft'&&event.key!=='ArrowRight')return;
     event.preventDefault();
-    goalYaw+=move[0];
-    goalPitch=THREE.MathUtils.clamp(goalPitch+move[1],-.22,.22);
+    goalYaw+=event.key==='ArrowLeft'?-.24:.24;
     invalidate();
   });
   window.addEventListener('scroll',invalidate,{passive:true});window.addEventListener('resize',invalidate);
