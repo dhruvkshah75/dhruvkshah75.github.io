@@ -13,17 +13,18 @@ try {
   const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:false, powerPreference:'high-performance'});
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-1,1,1,-1,.1,10); camera.position.z=1;
-  const uniforms = {uTime:{value:0}, uResolution:{value:new THREE.Vector2()}, uMouse:{value:pointer}, uDpr:{value:1}, uHome:{value:1}, uProject:{value:0}, uContact:{value:0}, uFill:{value:0}, uSection:{value:0}, uCell:{value:15}, uHeroFlight:{value:0}, uHeroArrival:{value:0}};
+  const uniforms = {uTime:{value:0}, uResolution:{value:new THREE.Vector2()}, uMouse:{value:pointer}, uDpr:{value:1}, uHome:{value:1}, uProject:{value:0}, uContact:{value:0}, uFill:{value:0}, uStack:{value:0}, uSection:{value:0}, uCell:{value:15}, uHeroFlight:{value:0}, uHeroArrival:{value:0}};
   const material = new THREE.ShaderMaterial({transparent:true, depthWrite:false, uniforms,
     vertexShader:`
       attribute float seed;
-      uniform float uTime; uniform vec2 uResolution; uniform vec2 uMouse; uniform float uDpr; uniform float uHome; uniform float uProject; uniform float uContact; uniform float uFill; uniform float uSection; uniform float uCell; uniform float uHeroFlight; uniform float uHeroArrival;
+      uniform float uTime; uniform vec2 uResolution; uniform vec2 uMouse; uniform float uDpr; uniform float uHome; uniform float uProject; uniform float uContact; uniform float uFill; uniform float uSection; uniform float uStack; uniform float uCell; uniform float uHeroFlight; uniform float uHeroArrival;
       varying float vAlpha; varying float vSeed;
       void main(){
         vec2 px=(position.xy*.5+.5)*uResolution;
         float edge=min(min(px.x,uResolution.x-px.x),min(px.y,uResolution.y-px.y));
         float contour=85.0 + 58.0*uHome + 22.0*sin(px.x*.009+px.y*.013) + 36.0*sin(px.x*.018-px.y*.011);
         contour=mix(contour,contour*.55,max(uProject,uContact));
+        contour+=70.0*uStack;
         float mobile=1.0-smoothstep(380.0,700.0,uResolution.x);
         contour=mix(contour,min(contour,50.0),mobile);
         contour=mix(contour,max(uResolution.x,uResolution.y)*.8,uFill);
@@ -36,6 +37,7 @@ try {
         vAlpha*=1.-smoothstep(.12,.48,uHeroFlight);
         float arrivalCell=smoothstep(seed*.55,seed*.55+.45,uHeroArrival);
         vAlpha=mix(vAlpha,.18+seed*.16+nearMouse*.38,max(uSection,arrivalCell));
+        vAlpha+=uStack*(band*.17+nearMouse*.28);
         vSeed=seed;
         gl_PointSize=uCell*uDpr*mix(mix(1.01,.65+twinkle*.46,activeEdge)*(1.0+nearMouse*.08),1.01,uSection);
         gl_Position=vec4(position,1.0);
@@ -83,6 +85,7 @@ try {
     uniforms.uHome.value=document.body.classList.contains('at-home')?1:0;
     uniforms.uProject.value=setting('--project-presence');
     uniforms.uContact.value=setting('--contact-presence');
+    uniforms.uStack.value=setting('--stack-presence');
     const section=setting('--section-grid');
     uniforms.uSection.value=reduceMotion.matches?section:THREE.MathUtils.lerp(uniforms.uSection.value,section,.16);
     uniforms.uFill.value=reduceMotion.matches?0:setting('--pixel-fill');

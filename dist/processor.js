@@ -104,8 +104,8 @@ function instances(parent, geometry, material, transforms) {
 
 function buildProcessor() {
   const assembly = new THREE.Group();
-  const layers = Array.from({length:4}, () => { const layer = new THREE.Group();assembly.add(layer);return layer; });
-  const [socket, substrate, die, lid] = layers;
+  const layers = Array.from({length:6}, () => { const layer = new THREE.Group();assembly.add(layer);return layer; });
+  const [socket, substrate, interposer, die, thermal, lid] = layers;
   const graphite = metal(0x374d45,.48,.36);
   const nickel = metal(0xb2c1b6,.73,.26);
   const gold = metal(0xd3b575,.68,.33);
@@ -149,8 +149,34 @@ function buildProcessor() {
   }
   instances(substrate,new THREE.BoxGeometry(.23,.09,.105),nickel,caps);
   instances(substrate,new THREE.BoxGeometry(.124,.092,.108),graphite,caps);
+  // The ceramic interposer carries finer traces and a dense array of microbumps.
+  const interposerSurface = paintedSurface(ctx => {
+    ctx.fillStyle = '#263f46';
+    ctx.fillRect(0,0,768,768);
+    for (let i=0;i<24;i++) {
+      const x=30+i*30;
+      ctx.strokeStyle=i%3===0?'#ccc092':'#637f77';
+      ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(x,52);ctx.lineTo(x,148+i%5*15);
+      ctx.lineTo(x+(i<12?25:-25),224+i%5*15);ctx.lineTo(x+(i<12?25:-25),692);ctx.stroke();
+    }
+    for (let row=0;row<12;row++) for(let col=0;col<13;col++) {
+      ctx.fillStyle=(col+row)%4===0?'#e5c88a':'#a89c70';
+      ctx.fillRect(108+col*46,112+row*49,10,9);
+    }
+  });
+  const ceramic=metal(0x263b43,.25,.42);
+  plate(interposer,2.88,2.58,.064,.012,[metal(0xffffff,.28,.42,interposerSurface),ceramic]);
+  const microbumps=[];
+  for(let i=-7;i<=7;i++) for(const sign of [-1,1]) microbumps.push([i*.155,.079,sign*1.04],[sign*1.16,.079,i*.14]);
+  instances(interposer,new THREE.SphereGeometry(.037,8,5),gold,microbumps);
   plate(die,2.25,1.97,.08,.012,[gold,gold]);
   const silicon = plate(die,2.18,1.9,.085,.014,[metal(0xe4efe8,.41,.32,paintedSurface(drawDie)),graphite]);silicon.position.y = .08;
+  const copper=metal(0xb98053,.71,.3);
+  const groove=metal(0x8b6750,.53,.44);
+  plate(thermal,2.32,2.09,.061,.012,[copper,copper]);
+  const ribs=Array.from({length:18},(_,i)=>[(i-8.5)*.123,.069,0]);
+  instances(thermal,new THREE.BoxGeometry(.032,.016,1.95),groove,ribs);
   plate(lid,3.04,2.82,.072,.045,[nickel,nickel]);
   const cap = plate(lid,2.89,2.67,.205,.085,[metal(0xffffff,.49,.37,paintedSurface(drawLid)),nickel]);
   cap.position.y = .075;
@@ -162,8 +188,7 @@ export async function startProcessor() {
   if (!response.ok) throw new Error('Could not load processor keyframes');
   const {stages} = await response.json();
   const stack = document.getElementById('stack-chip'), sequence = document.getElementById('stack');
-  const slider = document.getElementById('assembly-range'), detail = document.getElementById('assembly-detail');
-  let manual = null, activeStage = -1;
+  const panel = sequence.querySelector('.stack-panel');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const display = document.createElement('div');display.className = 'chip-display';display.ariaHidden = 'true';
   const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'});
@@ -171,7 +196,6 @@ export async function startProcessor() {
   renderer.setClearColor(0,0);
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
   display.append(renderer.domElement);
-  const callout = document.createElement('span');callout.className = 'chip-callout';display.append(callout);
   stack.append(display);
   const scene = new THREE.Scene();
   const studio = paintedSurface(ctx => {
@@ -183,36 +207,51 @@ export async function startProcessor() {
   scene.add(new THREE.HemisphereLight(0xfffdf1,0x728b7f,1.35));
   const light = new THREE.DirectionalLight(0xfffaea,2.0);light.position.set(-4,8,5);light.castShadow=true;
   light.shadow.mapSize.set(1024,1024);
-  Object.assign(light.shadow.camera,{left:-4,right:4,top:4,bottom:-4,near:.1,far:22});
+  Object.assign(light.shadow.camera,{left:-6,right:6,top:7,bottom:-7,near:.1,far:26});
   light.shadow.normalBias=.012;light.shadow.bias=-.0003;scene.add(light);
   const camera = new THREE.OrthographicCamera(-4,4,3,-3,.1,65);
   camera.position.set(5.2,6.8,8.2);camera.lookAt(0,0,0);
   const {assembly,layers} = buildProcessor();
   assembly.traverse(part=>{if(part.isMesh){part.castShadow=true;part.receiveShadow=true}});
   scene.add(assembly);
+  const labels=['Socket','Package substrate','Ceramic interposer','Silicon die','Thermal interface','Heat spreader'].map(name=>{
+    const label=document.createElement('span');
+    label.className='chip-layer-label';
+    label.textContent=name;
+    display.append(label);
+    return label;
+  });
+  const axis = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-5.15,0),new THREE.Vector3(0,5.0,0)]),
+    new THREE.LineDashedMaterial({color:0x537e6e,dashSize:.08,gapSize:.09,transparent:true,opacity:0})
+  );
+  axis.computeLineDistances();
+  scene.add(axis);
+  const anchor = new THREE.Vector3();
+  const partWidths = [2.95,2.55,1.91,1.51,1.55,2.14];
+
   const shadowTexture = paintedSurface(ctx => {
     const wash=ctx.createRadialGradient(384,384,20,384,384,375);wash.addColorStop(0,'rgba(41,69,52,.41)');wash.addColorStop(.55,'rgba(57,82,63,.17)');wash.addColorStop(1,'rgba(71,87,72,0)');ctx.fillStyle=wash;ctx.fillRect(0,0,768,768);
   },128);
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(8,6.3),new THREE.MeshBasicMaterial({map:shadowTexture,transparent:true,depthWrite:false}));
   shadow.rotation.x=-Math.PI/2;scene.add(shadow);
-  const pointer = new THREE.Vector2(), tilt = new THREE.Vector2(), point = new THREE.Vector3();
-  let frame=0,last=0,width=0,height=0,lost=false,layoutDirty=true,progress=0,visible=false;
+  const orbit = new THREE.Spherical();
+  const defaultYaw = .64;
+  let yaw=defaultYaw,pitch=0,goalYaw=defaultYaw,goalPitch=0;
+  let frame=0,last=0,width=0,height=0,lost=false,layoutDirty=true,progress=0,targetProgress=0,visible=false;
+  let touch;
+  const angle = Math.PI * 2;
+  stack.tabIndex=0;
+  stack.setAttribute('aria-label','Processor model. Move the pointer or use arrow keys to rotate.');
+  stack.setAttribute('role','group');
+
   function measure() {
-    const rect=stack.getBoundingClientRect(),bounds=sequence.getBoundingClientRect();
+    const rect=stack.getBoundingClientRect(), bounds=sequence.getBoundingClientRect();
     visible=rect.bottom>0 && rect.top<innerHeight;
-    const travel=sequence.offsetHeight-document.querySelector('.stack-panel').offsetHeight;
-    if (bounds.bottom < 0 || bounds.top > innerHeight) manual=null;
-    const start=innerHeight*.54, end=Math.min(0, -travel*.86);
-    const automatic=reduced.matches?1:1-smooth(end,start,bounds.top);
-    progress=manual ?? automatic;
-    slider.value=Math.round(progress*100);
-    const step=Math.max(0,stages.findLastIndex(stage=>progress+.001>=stage.at));
-    if(step!==activeStage){
-      activeStage=step;
-      const title=document.createElement('strong');title.textContent=stages[step].name+'. ';
-      detail.replaceChildren(title,document.createTextNode(stages[step].detail));
-    }
-    slider.setAttribute('aria-valuetext',Math.round(progress*100)+'% exploded. '+stages[step].name);
+    const travel=sequence.offsetHeight-panel.offsetHeight;
+    // Hold the intact package after it enters the viewport, then unpack it while pinned.
+    targetProgress=reduced.matches?1:smooth(.16,.78,-bounds.top/Math.max(1,travel));
+    if(!visible||reduced.matches)progress=targetProgress;
     const w=Math.max(1,Math.round(rect.width)),h=Math.max(1,Math.round(rect.height));
     if(width!==w||height!==h){width=w;height=h;renderer.setSize(w,h,false)}
     layoutDirty=false;
@@ -226,38 +265,77 @@ export async function startProcessor() {
     if(!visible||document.querySelector('dialog[open]'))return;
     if(changed||now-last>=1000/32) {
       const dt=Math.min(80,now-last);last=now;
-      const w=width,h=height;
-      const span=Math.max(mix(4.65,7.35,progress),mix(6.65,7.55,progress)*h/w);
-      camera.left=-span*w/h/2;camera.right=-camera.left;camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();
-      const t=reduced.matches?0:now*.001;
-      tilt.lerp(pointer,reduced.matches?1:1-Math.exp(-dt*.006));
-      assembly.rotation.y=-.30 + .12*Math.sin(t*.43) +progress*.4+tilt.x*.14;
-      assembly.rotation.x=.025*Math.sin(t*.51)+tilt.y*.045;
-      assembly.position.y=.08*Math.sin(t*.8);
-      const from=stages[activeStage],to=stages[Math.min(activeStage+1,stages.length-1)];
-      const part=to===from?1:smooth(from.at,to.at,progress);
-      layers.forEach((layer,i)=>{
-        layer.position.y=mix(from.height[i],to.height[i],part);
-        layer.rotation.y=mix(from.turn[i],to.turn[i],part);
-      });
-      shadow.position.y=layers[0].position.y-.24;
+      progress=mix(progress,targetProgress,reduced.matches?1:1-Math.exp(-dt*.021));
+      if(Math.abs(progress-targetProgress)<.002)progress=targetProgress;
+      const span=Math.max(mix(5.2,12.35,progress),6.9*height/width);
+      const showLabels=width>505 ? smooth(.76,1,progress) : 0;
+      const shift=showLabels*.64;
+      camera.left=-span*width/height/2+shift;camera.right=span*width/height/2+shift;
+      camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();
+      const damping=reduced.matches?1:1-Math.exp(-dt*.014);
+      yaw=mix(yaw,goalYaw,damping);
+      pitch=mix(pitch,goalPitch,damping);
+      const elevation=mix(.60,.33,progress)+pitch;
+      orbit.set(14,Math.PI/2-elevation,yaw);
+      camera.position.setFromSpherical(orbit);
+      camera.lookAt(0,0,0);
+      const index=stages.findLastIndex(stage=>stage.at<=progress);
+      const from=stages[index],to=stages[Math.min(index+1,stages.length-1)];
+      const fraction=to===from?0:(progress-from.at)/(to.at-from.at);
+      layers.forEach((layer,i)=>{layer.position.y=mix(from.height[i],to.height[i],fraction)});
+      shadow.position.y=layers[0].position.y-.21;
+      axis.visible=progress>.84;
+      axis.material.opacity=smooth(.84,1,progress)*.45;
+      for (const [i,label] of labels.entries()) {
+        label.hidden=showLabels===0;
+        if(label.hidden)continue;
+        anchor.set(partWidths[i]*Math.cos(yaw),layers[i].position.y+.055,-partWidths[i]*Math.sin(yaw));
+        anchor.project(camera);
+        const edge=(anchor.x+1)*width/2;
+        const labelLeft=width*.72;
+        label.style.top=(1-anchor.y)*height/2+'px';
+        label.style.setProperty('--leader-length',Math.max(12,labelLeft-edge-4)+'px');
+        label.style.opacity=showLabels;
+      }
       renderer.render(scene,camera);
-      const feature=[3,2,1,0,2][activeStage];
-      point.set(feature===0?1.68:1.02,feature===3?.33:.15,-.04);
-      layers[feature].localToWorld(point);point.project(camera);
-      callout.textContent=['Heat spreader','Silicon die','Substrate','Socket','Silicon die'][activeStage];
-      const x=(point.x+1)*w/2,y=(1-point.y)*h/2;
-      callout.style.left=x+'px';callout.style.top=(y-6)+'px';
-      callout.hidden=x+99>w;
       document.documentElement.classList.add('has-chip');
     }
-    if(!reduced.matches)frame=requestAnimationFrame(draw);
+    if(!reduced.matches&&(progress!==targetProgress||Math.abs(yaw-goalYaw)+Math.abs(pitch-goalPitch)>.002))frame=requestAnimationFrame(draw);
   }
   function invalidate(){layoutDirty=true;if(!frame)frame=requestAnimationFrame(draw)}
-  slider.addEventListener('input',()=>{manual=Number(slider.value)/100;invalidate()});
-  stack.addEventListener('pointermove',e=>{if(!reduced.matches&&e.pointerType==='mouse')pointer.set(e.offsetX/width*2-1,e.offsetY/height*2-1)},{passive:true});
+  stack.addEventListener('pointermove',event=>{
+    if (event.pointerType==='touch') {
+      if(!touch||touch.id!==event.pointerId)return;
+      goalYaw=touch.yaw+(event.clientX-touch.x)*.024;
+    } else {
+      const rect=stack.getBoundingClientRect();
+      goalYaw=defaultYaw+((event.clientX-rect.left)/rect.width-.5)*angle;
+      goalPitch=(.5-(event.clientY-rect.top)/rect.height)*.42;
+    }
+    invalidate();
+  },{passive:true});
+  stack.addEventListener('pointerleave',()=>{
+    if(touch)return;
+    goalYaw=defaultYaw;goalPitch=0;invalidate();
+  });
+  stack.addEventListener('pointerdown',event=>{
+    if(event.pointerType==='touch'){
+      touch={x:event.clientX,yaw:goalYaw,id:event.pointerId};
+      stack.setPointerCapture(event.pointerId);
+    }
+  });
+  for(const type of ['pointercancel','pointerup'])stack.addEventListener(type,()=>{touch=null});
+  stack.addEventListener('keydown',event=>{
+    const directions={ArrowLeft:[-.24,0],ArrowRight:[.24,0],ArrowUp:[0,.09],ArrowDown:[0,-.09]};
+    const move=directions[event.key];
+    if(!move)return;
+    event.preventDefault();
+    goalYaw+=move[0];
+    goalPitch=THREE.MathUtils.clamp(goalPitch+move[1],-.22,.22);
+    invalidate();
+  });
   window.addEventListener('scroll',invalidate,{passive:true});window.addEventListener('resize',invalidate);
-  reduced.addEventListener('change',()=>{pointer.set(0,0);invalidate()});
+  reduced.addEventListener('change',invalidate);
   document.addEventListener('visibilitychange',invalidate);
   document.getElementById('project-dialog').addEventListener('close',invalidate);
   renderer.domElement.addEventListener('webglcontextlost',()=>{lost=true;display.hidden=true;document.documentElement.classList.remove('has-chip')});

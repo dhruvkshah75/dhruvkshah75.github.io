@@ -1,4 +1,5 @@
-import { createSectionTransition } from './section-transition.js';
+import { createSectionTransition } from './section-transition.js?v=revision';
+import { drawExperienceSignal } from './experience-transition.js';
 import { showProjectBackground, hideProjectBackground } from './project-background.js';
 
 const projects = [
@@ -26,14 +27,14 @@ const projects = [
     github:'https://github.com/dhruvkshah75/oxidrop'
   },
   {
-    steps:['Input', 'Simulate', 'Synchronise'], topics:['WebSockets', '2D game', 'Concurrency'],
+    steps:['Socket input', 'Server tick', 'State broadcast'], topics:['WebSockets', '2D game', 'Concurrency'],
     name:'gamesync', category:'Multiplayer networking · In progress',
     description:'A Go multiplayer server in development for real-time state synchronisation.',
     features:[
       ['Current build','The health endpoint is runnable. The game simulation, clients, and gateway are planned.'],
       ['Planned architecture','Players send inputs to an authoritative server that resolves positions, hits, and scores.']
     ],
-    stack:'Go · Sockets', caption:'Controller input illustrates the planned player-to-server flow.',
+    stack:'Go · Sockets', caption:'Two clients send concurrent socket inputs. The server resolves each tick and broadcasts one shared arena state.',
     github:'https://github.com/dhruvkshah75/gamesync'
   },
   {
@@ -71,7 +72,8 @@ const counter = get('#project-counter'), prev = get('#prev-project'), next = get
 const experience = get('#experience'), about = get('#about'), contact = get('#contact');
 const clamp = x => Math.max(0,Math.min(1,x));
 const smooth = x => {x=clamp(x);return x*x*(3-2*x)};
-const progress = value => document.dispatchEvent(new CustomEvent('portfolio:load',{detail:value}));
+const boot = detail => document.dispatchEvent(new CustomEvent('portfolio:load',{detail}));
+const visit = createSectionTransition();
 let current = 0, lastFocus, projectArt, projectArtLoad;
 function sequenceLabels(steps) {
   return steps.map(text=>{
@@ -88,12 +90,15 @@ const cards = projects.map((project,index) => {
   card.querySelector('.card-title').textContent=project.name;
   card.querySelector('.card-description').textContent=project.description;
   card.querySelector('.card-stack').textContent=project.stack;
-  card.addEventListener('click',()=>openProject(index));
+  card.addEventListener('click',()=>visit({
+    id:'project',label:project.name,project:project.name,
+    preview:card.querySelector('canvas'),reveal:()=>openProject(index)
+  }));
   stage.append(card);
   return card;
 });
 function loadProjectArt() {
-  projectArtLoad ??= import('./project-visuals.js').then(module=>{
+  projectArtLoad ??= import('./project-visuals.js?v=revision').then(module=>{
     projectArt=module.startProjectIllustrations();
     if(dialog.open)projectArt?.show(Number(dialog.dataset.index));
   }).catch(error=>console.warn('Project illustrations unavailable',error));
@@ -101,11 +106,8 @@ function loadProjectArt() {
 }
 let stackLoad;
 function loadStack() {
-  return stackLoad ??= import('./processor.js').then(module=>module.startProcessor()).catch(error=>{
+  return stackLoad ??= import('./processor.js?v=revision').then(module=>module.startProcessor()).catch(error=>{
     console.warn('Processor illustration unavailable',error);
-    get('#assembly-range').hidden=true;
-    get('.assembly-caption label').textContent='Exploded processor assembly';
-    get('#assembly-detail').textContent='Heat spreader, silicon die, package substrate, and socket.';
   });
 }
 const nearStack=new IntersectionObserver(([entry])=>{
@@ -170,18 +172,21 @@ function update() {
   const presence=r=>smooth((vh-r.top)/(vh*.65))*smooth(r.bottom/(vh*.75));
   const aboutReveal=reduced.matches?1:smooth((home-.68)/.27);
   root.style.setProperty('--about-reveal',aboutReveal);
-  stackPanel.style.setProperty('--stack-pin-top',Math.min(0,vh-stackPanel.offsetHeight)+'px');
-  const grid=Math.max(presence(aboutRect)*aboutReveal,presence(exp));
-  const exit=reduced.matches?0:smooth((vh-projectGap.getBoundingClientRect().top)/(vh*.82));
+  const stackPresence=presence(stackPanel.getBoundingClientRect());
+  const grid=Math.max(presence(aboutRect)*aboutReveal,presence(exp),stackPresence*.73);
+  const handoff=reduced.matches?0:clamp((vh*.86-projectGap.getBoundingClientRect().top)/(vh*.91));
+  const exit=smooth(handoff/.64);
+  drawExperienceSignal(handoff);
   root.style.setProperty('--wash',grid);
+  root.style.setProperty('--stack-presence',stackPresence);
   root.style.setProperty('--section-grid',grid);
-  root.style.setProperty('--pixel-fill',Math.sin(exit*Math.PI));
-  root.style.setProperty('--pixel-transition',Math.sin(exit*Math.PI));
+  root.style.setProperty('--pixel-fill',Math.sin(handoff*Math.PI)*.52);
+  root.style.setProperty('--pixel-transition',Math.sin(handoff*Math.PI)*.52);
   root.style.setProperty('--exit-project',exit);
   root.style.setProperty('--hero-presence',1-home);
   root.style.setProperty('--project-presence',presence(projectsRect));
   root.style.setProperty('--contact-presence',presence(contactRect));
-  root.style.setProperty('--experience-reveal',smooth((vh-exp.top)/(vh*.65)));
+  root.style.setProperty('--experience-reveal',smooth((vh-exp.top)/(vh*.56)));
   root.style.setProperty('--experience-departure',smooth(exp.bottom/(vh*.65)));
   experience.style.setProperty('--experience-pin-top',Math.min(0,vh-experience.offsetHeight)+'px');
   const position=clamp(-projectsRect.top/projectRange())*(projects.length-1);
@@ -190,14 +195,15 @@ function update() {
     const offset=index-position, distance=Math.abs(offset);
     const selected=reduced.matches||index===current;
     card.tabIndex=selected?0:-1;card.setAttribute('aria-hidden',String(!selected));
-    if(reduced.matches)return;
+    if(reduced.matches){card.style.filter='';return}
     card.style.transform='translate(-50%,-50%) translateX('+offset*105+'%) translateZ('+(-Math.min(distance,1.5)*130)+'px) rotateY('+(-Math.max(-1,Math.min(offset,1))*17)+'deg)';
     card.style.opacity=String(1-Math.min(.62,distance*.42));
+    card.style.filter='blur('+Math.min(2.2,Math.max(0,distance-.28)*2.6)+'px)';
     card.style.zIndex=String(8-Math.round(distance));
   });
   counter.textContent=String(current+1).padStart(2,'0')+' / '+String(projects.length).padStart(2,'0');
   prev.disabled=current===0;next.disabled=current===projects.length-1;
-  let active='about';
+  let active='home';
   for (const dest of destinations) if(dest.getBoundingClientRect().top<vh*.55)active=dest.id;
   navLinks.forEach(link=>{
     const selected=link.hash==='#'+active;
@@ -217,37 +223,44 @@ window.addEventListener('resize',requestUpdate);reduced.addEventListener('change
 function navigate(id,behavior) {
   const target=id==='experience'?get('.experience-frame'):document.getElementById(id);
   if(!target)return;
-  let top=id==='home'?0:scrollY+target.getBoundingClientRect().top;
-  if(id==='stack'&&!reduced.matches)top+=Math.max(0,target.offsetHeight-get('.stack-panel').offsetHeight)*.55;
+  const top=id==='home'?0:scrollY+target.getBoundingClientRect().top;
   window.scrollTo({top,behavior});
 }
-const sectionIds=['home','stack',...destinations.map(dest=>dest.id)];
-const visit=createSectionTransition(async id=>{
-  history.replaceState(null,'','#'+id);
-  navigate(id,'instant');
-  update();
-  await prepareDestination(id);
-});
+const sectionIds=['stack',...destinations.map(dest=>dest.id)];
 document.querySelectorAll('a[href^="#"]').forEach(link=>link.addEventListener('click',event=>{
   if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey||link.classList.contains('skip'))return;
   event.preventDefault();
-  visit(link.hash.slice(1),link.hash==='#home'?'Dhruv Shah':link.textContent.trim());
+  const id=link.hash.slice(1);
+  visit({id,label:id==='home'?'Cover':link.textContent.trim(),reveal:async ()=>{
+    history.replaceState(null,'',id==='home'?location.pathname+location.search:link.hash);
+    navigate(id,'instant');
+    update();
+    await prepareDestination(id);
+  }});
 }));
 window.addEventListener('hashchange',()=>navigate(location.hash.slice(1),'instant'));
 update();
-progress(30);
 async function prepareIntro() {
-  const font=document.fonts.load('500 24px "DM Sans"');
-  const field=import('./visuals.js?v=assembly');
-  const fracture=import('./hero-transition.js?v=assembly').then(module=>module.ready);
   let settled=0;
-  await Promise.allSettled([font,field,fracture].map(job=>job.finally(()=>progress(30+ ++settled*20))));
+  function track(check, job, state) {
+    return job.then(()=>{
+      boot({progress:24+ ++settled*22,check,state:state()});
+    },()=>{
+      boot({progress:24+ ++settled*22,check,state:'Fallback'});
+    });
+  }
+  await Promise.all([
+    track('interface',document.fonts.load('500 24px "DM Sans"'),()=> 'Ready'),
+    track('field',import('./visuals.js?v=revision'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
+    track('scene',import('./hero-transition.js?v=revision').then(module=>module.ready),
+      ()=> root.classList.contains('has-fracture')?'Online':'Static')
+  ]);
   const id=location.hash.slice(1);
   if(sectionIds.includes(id)){
     navigate(id,'instant');
     await prepareDestination(id);
   }
   update();
-  requestAnimationFrame(()=>progress(100));
+  requestAnimationFrame(()=>boot({progress:100}));
 }
 prepareIntro();

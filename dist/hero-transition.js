@@ -53,43 +53,9 @@ if (canvas && gap && copy && !reducedMotion.matches) {
     let width = 0, height = 0, cell = 0, bounds;
     let progress = location.hash && location.hash !== '#home' ? 1 : 0;
     let target = progress, frame = 0, previousTime = 0;
-    let handoff = 0;
     const clamp = x => Math.max(0, Math.min(1, x));
     const random = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
     const smooth = x => { x = clamp(x); return x * x * (3 - 2 * x); };
-
-    // A staggered row of circuit tiles turns edge-on as each section passes.
-    const tileScene = new THREE.Scene();
-    const tileCamera = new THREE.OrthographicCamera(-1,1,1,-1,.1,1800);
-    tileCamera.position.z = 900;
-    tileScene.add(new THREE.HemisphereLight(0xfafdf3,0x517665,2.3));
-    const tileLight = new THREE.DirectionalLight(0xfffbed,2.1);
-    tileLight.position.set(-2,4,5);tileScene.add(tileLight);
-    const tiles = new THREE.InstancedMesh(geometry, new THREE.MeshStandardMaterial({
-      color:0xffffff,roughness:.55,metalness:.18,transparent:true,opacity:.72
-    }), 180);
-    tiles.frustumCulled = false;tileScene.add(tiles);
-    const tileTransform = new THREE.Object3D();
-    const tileColor = new THREE.Color();
-    for(let i=0;i<tiles.count;i++) tiles.setColorAt(i,tileColor.setHex([0xa3c3b4,0x80aaa1,0xe1e6cd,0x91b4b4][i%4]));
-    const destinations = ['#about','#experience','#contact'].map(selector=>document.querySelector(selector));
-    function drawHandoff() {
-      const columns=width<700?15:30, rows=5, spacing=width/columns;
-      tiles.count=columns*rows;
-      tileCamera.left=-width/2;tileCamera.right=width/2;tileCamera.top=height/2;tileCamera.bottom=-height/2;tileCamera.updateProjectionMatrix();
-      for(let i=0;i<tiles.count;i++){
-        const col=i%columns,row=Math.floor(i/columns);
-        const local=clamp(handoff*1.48-col/columns*.25-row*.048);
-        const angle=Math.PI*local, lift=Math.sin(angle);
-        tileTransform.position.set((col+.5)*spacing-width/2, height*(handoff-.52)+row*spacing*.56+Math.sin(col*.4)*spacing*.65, lift*spacing*.8);
-        tileTransform.rotation.set(-angle,.33*lift,.1*lift);
-        const size=spacing*.64*lift;
-        tileTransform.scale.set(size,size,Math.max(.02,size*.17));
-        tileTransform.updateMatrix();tiles.setMatrixAt(i,tileTransform.matrix);
-      }
-      tiles.instanceMatrix.needsUpdate=true;
-      renderer.render(tileScene,tileCamera);
-    }
 
     function sampleText() {
       bounds = copy.getBoundingClientRect();
@@ -259,12 +225,11 @@ if (canvas && gap && copy && !reducedMotion.matches) {
       progress += (target - progress) * (1 - Math.exp(-dt / 80));
       if (Math.abs(target - progress) < .0001) progress = target;
       if (progress === 1 && target === 1) {
-        // Outside the hero only the section handoff needs rendering.
+        // The title has finished dispersing.
         copy.style.opacity='0';copy.style.maskImage='none';
         document.documentElement.style.setProperty('--hero-pixel-flight','0');
         document.documentElement.style.setProperty('--hero-pixel-arrival','0');
-        canvas.style.opacity=handoff>0?'1':'0';
-        if(handoff>0)drawHandoff();
+        canvas.style.opacity='0';
         previousTime=0;
         return;
       }
@@ -285,7 +250,7 @@ if (canvas && gap && copy && !reducedMotion.matches) {
       root.setProperty('--hero-pixel-flight', String(progress < 1 ? progress : 0));
       root.setProperty('--hero-pixel-arrival', String(progress < 1 ? smooth((progress - .64) / .28) * (1-smooth((progress-.92)/.08)) : 0));
       const inFlight = progress > 0 && progress < .94;
-      canvas.style.opacity = !reducedMotion.matches && (inFlight || handoff > 0) ? '1' : '0';
+      canvas.style.opacity = !reducedMotion.matches && inFlight ? '1' : '0';
       const release = geometry.getAttribute('released');
       const cutouts = [];
       for (let i = 0; i < shards.length; i++) {
@@ -309,8 +274,7 @@ if (canvas && gap && copy && !reducedMotion.matches) {
       camera.position.y = height * .5;
       camera.fov = 48;
       camera.updateProjectionMatrix();
-      if (handoff > 0) drawHandoff();
-      else if (inFlight) renderer.render(scene, camera);
+      if (inFlight) renderer.render(scene, camera);
       if (progress !== target) frame = requestAnimationFrame(draw);
       else previousTime = 0;
     }
@@ -318,13 +282,6 @@ if (canvas && gap && copy && !reducedMotion.matches) {
       if (!motion) return;
       const rect = gap.getBoundingClientRect();
       target = reducedMotion.matches ? 0 : clamp((height - rect.top) / Math.max(1, rect.height));
-      handoff = 0;
-      if (!reducedMotion.matches && target === 1) {
-        for (const destination of destinations) {
-          const arrival = (height - destination.getBoundingClientRect().top) / height;
-          if (arrival > 0 && arrival < .78) { handoff = arrival / .78; break; }
-        }
-      }
       if (reducedMotion.matches || rect.bottom < 0) progress = target;
       if (!frame) frame = requestAnimationFrame(draw);
     }

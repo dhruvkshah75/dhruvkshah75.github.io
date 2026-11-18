@@ -84,22 +84,71 @@ export function startProjectIllustrations() {
       group.rotation.y=-.12+.055*Math.sin(t*.5);
     });
   }
-  // gamesync: a softly floating controller with responsive-looking controls.
+  // GameSync: two socket clients and the authoritative simulation of a shared arena.
   {
     const scene=makeScene(), group=new THREE.Group();scene.add(group);
-    const shape=new THREE.Shape();shape.moveTo(-1.8,-.25);shape.bezierCurveTo(-2.05,.05,-1.9,.8,-1.35,.95);shape.lineTo(1.35,.95);shape.bezierCurveTo(1.9,.8,2.05,.05,1.8,-.25);shape.lineTo(1.5,-1.05);shape.bezierCurveTo(1.35,-1.4,.95,-1.35,.7,-1.02);shape.lineTo(.4,-.7);shape.lineTo(-.4,-.7);shape.lineTo(-.7,-1.02);shape.bezierCurveTo(-.95,-1.35,-1.35,-1.4,-1.5,-1.05);shape.closePath();
-    const pad=new THREE.Mesh(new THREE.ExtrudeGeometry(shape,{depth:.32,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.12,bevelThickness:.12}),colors.light);group.add(pad);
-    box(group,-1,.15,.52,.55,.14,.09,colors.dark);box(group,-1,.15,.53,.14,.55,.09,colors.dark);
-    const buttons=[[.9,.36],[1.18,.1],[.9,-.16],[.62,.1]].map(([x,y],i)=>sphere(group,x,y,.56,.10,i===0?colors.mint:colors.dark));
-    cylinder(group,-.35,-.35,.52,.18,.1,colors.dark).rotation.x=Math.PI/2;cylinder(group,.35,-.35,.52,.18,.1,colors.dark).rotation.x=Math.PI/2;
-    // Add face seams, thumb caps, shoulder triggers and the pairing indicators.
-    for(const x of [-1.17,1.17])box(group,x,.96,.13,.69,.18,.29,colors.dark);
-    for(const x of [-.35,.35]){
-      const cap=cylinder(group,x,-.35,.61,.145,.09,colors.ink);cap.rotation.x=Math.PI/2;
-    }
-    for(let i=0;i<4;i++)box(group,-.18+i*.12,.57,.48,.069,.036,.04,i===0?colors.accent:colors.dark);
-    for(const x of [-.17,.17])box(group,x,.19,.49,.17,.08,.06,colors.dark);
-    scenes.push(scene);updates.push(t=>{group.rotation.y=Math.sin(t*1.1)*.22;group.rotation.x=Math.sin(t*.8)*.1;group.rotation.z=Math.sin(t*1.3)*.09;group.position.y=Math.sin(t*1.5)*.15;buttons.forEach((button,i)=>{button.position.z=.56-Math.max(0,Math.sin(t*2.7-i*1.7))*.09})});
+    const serverX=0, clientX=2.44;
+    const arenaColor=mat(0x394b52), court=mat(0xa2ad9c), lineColor=mat(0xe5e0c6);
+    const players=[mat(0xc76b52),mat(0x468982)];
+    const arena=(x,y,size,title)=>{
+      const board=new THREE.Group();board.position.set(x,y,0);group.add(board);
+      box(board,0,-.12,0,size+.12,.23,size+.12,colors.dark);
+      box(board,0,0,0,size,.08,size,arenaColor);
+      box(board,0,.045,0,size*.91,.02,size*.91,court);
+      for(const sign of [-1,1]){
+        box(board,0,.085,sign*size*.445,size*.90,.07,.045,lineColor);
+        box(board,sign*size*.45,.085,0,.045,.07,size*.90,lineColor);
+      }
+      box(board,0,.066,0,.026,.012,size*.86,lineColor);
+      for(const z of [-1,1])box(board,0,.15,z*size*.28,size*.20,.20,.09,colors.ink);
+      const avatars=players.map(material=>{
+        const token=new THREE.Group();board.add(token);
+        cylinder(token,0,.076,0,size*.077,.035,arenaColor);
+        cylinder(token,0,.16,0,size*.062,.13,material);
+        sphere(token,0,.26,0,size*.041,material);
+        return token;
+      });
+      label(board,title,0,.12,size*.52+.065,size*.77);
+      return {avatars,size};
+    };
+    const server=arena(serverX,.47,2.38,'SERVER TICK');
+    const clients=[arena(-clientX,-.11,1.55,'CLIENT A'),arena(clientX,-.11,1.55,'CLIENT B')];
+    const packetPaths = clients.map((_,index)=>{
+      const sign=index===0?-1:1;
+      const input=new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(sign*1.72,.03,-.28),
+        new THREE.Vector3(sign*1.65,.80,-.31),
+        new THREE.Vector3(sign*1.21,.55,-.29)
+      );
+      const state=new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(sign*1.21,.55,.31),
+        new THREE.Vector3(sign*1.60,.54,.51),
+        new THREE.Vector3(sign*1.72,.04,.34)
+      );
+      for(const path of [input,state])line(group,path.getPoints(16).map(p=>p.toArray()),0x786d7c,.7);
+      return {input,state,inbound:sphere(group,0,0,0,.07,players[index]),outbound:sphere(group,0,0,0,.068,colors.light)};
+    });
+    const direction=(phase,index)=>[
+      Math.sin(phase*.89+(index?2.8:.1))*.32,
+      Math.sin(phase*.59+(index?1.7:-1.1))*.22+(index?.13:-.13)
+    ];
+    const showState=(view,tick,local=-1,tickNow=tick)=>{
+      view.avatars.forEach((token,index)=>{
+        const [x,z]=direction(index===local?tickNow:tick,index);
+        token.position.x=x*view.size;token.position.z=z*view.size;
+      });
+    };
+    scenes.push(scene);
+    updates.push(time=>{
+      const tick=Math.floor(time*4)/4;
+      showState(server,tick);
+      clients.forEach((client,index)=>{
+        showState(client,tick-.25,index,time);
+        const {input,state,inbound,outbound}=packetPaths[index];
+        input.getPoint((time*1.7+index*.10)%1,inbound.position);
+        state.getPoint((time*1.7+.62)%1,outbound.position);
+      });
+    });
   }
   // groundtruth: a layered network with multiple paths and traveling signals.
   {
@@ -157,7 +206,9 @@ export function startProjectIllustrations() {
   });
   const cameras=scenes.map((_,index)=>{
     const view=camera.clone();
-    view.zoom=[1.34,1.23,1.30,1.30,1.21][index];view.updateProjectionMatrix();return view;
+    view.zoom=[1.34,1.23,1.15,1.30,1.21][index];
+    if(index===2){view.position.set(3.0,7.9,10.5);view.lookAt(0,.1,0)}
+    view.updateProjectionMatrix();return view;
   });
   const canvases=[...document.querySelectorAll('.project-canvas')], modal=document.querySelector('#dialog-canvas');
   const visible=new Set(), staticFrames=new Set();
