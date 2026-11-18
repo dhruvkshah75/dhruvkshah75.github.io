@@ -298,7 +298,9 @@ export async function startProcessor() {
       const dt=Math.min(80,now-last);last=now;
       progress=mix(progress,targetProgress,reduced.matches?1:1-Math.exp(-dt*.021));
       if(Math.abs(progress-targetProgress)<.002)progress=targetProgress;
-      const span=Math.max(mix(5.2,13.15,progress),6.9*height/width);
+      const closedSpan=mix(4.72,5.2,flight.travel);
+      const fitWidth=mix(6.18,6.9,flight.travel);
+      const span=Math.max(mix(closedSpan,13.15,progress),fitWidth*height/width);
       const showLabels=width>505 ? smooth(.76,1,progress) : 0;
       const shift=showLabels*.64;
       camera.left=-span*width/height/2+shift;camera.right=span*width/height/2+shift;

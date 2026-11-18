@@ -108,7 +108,7 @@ function loadProjectArt() {
 }
 let stackLoad;
 function loadStack() {
-  return stackLoad ??= import('./processor.js?v=chip-dock').then(module=>module.startProcessor()).catch(error=>{
+  return stackLoad ??= import('./processor.js?v=about-balance').then(module=>module.startProcessor()).catch(error=>{
     console.warn('Processor illustration unavailable',error);
   });
 }
@@ -261,7 +261,7 @@ async function prepareIntro() {
       document.fonts.load('500 24px "DM Sans"'),
       document.fonts.load('570 24px Geist')
     ]),()=> 'Ready'),
-    track('field',import('./visuals.js?v=chip-dock'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
+    track('field',import('./visuals.js?v=about-balance'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
     track('scene',import('./hero-transition.js?v=blue').then(module=>module.ready),
       ()=> root.classList.contains('has-fracture')?'Online':'Static')
   ]);
