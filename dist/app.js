@@ -1,6 +1,6 @@
 import { createSectionTransition } from './section-transition.js?v=revision';
-import { drawExperienceSignal } from './experience-transition.js';
-import { showProjectBackground, hideProjectBackground } from './project-background.js';
+import { drawExperienceSignal } from './experience-transition.js?v=charcoal';
+import { showProjectBackground, hideProjectBackground } from './project-background.js?v=charcoal';
 
 const projects = [
   {
@@ -231,7 +231,7 @@ document.querySelectorAll('a[href^="#"]').forEach(link=>link.addEventListener('c
   if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey||link.classList.contains('skip'))return;
   event.preventDefault();
   const id=link.hash.slice(1);
-  visit({id,label:id==='home'?'Cover':link.textContent.trim(),reveal:async ()=>{
+  visit({id,label:id==='home'?'Dhruv Shah':link.textContent.trim(),reveal:async ()=>{
     history.replaceState(null,'',id==='home'?location.pathname+location.search:link.hash);
     navigate(id,'instant');
     update();
@@ -251,8 +251,8 @@ async function prepareIntro() {
   }
   await Promise.all([
     track('interface',document.fonts.load('500 24px "DM Sans"'),()=> 'Ready'),
-    track('field',import('./visuals.js?v=contact'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
-    track('scene',import('./hero-transition.js?v=revision').then(module=>module.ready),
+    track('field',import('./visuals.js?v=charcoal'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
+    track('scene',import('./hero-transition.js?v=charcoal').then(module=>module.ready),
       ()=> root.classList.contains('has-fracture')?'Online':'Static')
   ]);
   const id=location.hash.slice(1);

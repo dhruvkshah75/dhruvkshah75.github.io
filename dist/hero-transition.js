@@ -13,16 +13,16 @@ if (canvas && gap && copy && !reducedMotion.matches) {
     renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(48, 1, .5, 5000);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x607080, 2));
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x677465, 2));
     const keyLight = new THREE.DirectionalLight(0xffffff, 4);
     keyLight.position.set(-400, 700, 1000); scene.add(keyLight);
-    const rimLight = new THREE.DirectionalLight(0xb6d6ed, 2.5);
+    const rimLight = new THREE.DirectionalLight(0xc5d7b8, 2.5);
     rimLight.position.set(600, -100, -200); scene.add(rimLight);
     const texture = new THREE.CanvasTexture(document.createElement('canvas'));
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     // Real lit cube surfaces, retaining glyph fragments only at the moment of release.
     const material = new THREE.MeshStandardMaterial({
-      color: 0x30353b, roughness: .36, metalness: .16,
+      color: 0x737f73, roughness: .36, metalness: .16,
       transparent: true, depthWrite: true,
     });
     material.onBeforeCompile = shader => {

@@ -47,10 +47,10 @@ export function drawExperienceSignal(progress) {
       context.lineTo(...tip);
       remaining-=lengths[i];
     }
-    context.strokeStyle=lane===1?'#9e7750':'#4f7c6c';
+    context.strokeStyle=lane===1?'#c49f74':'#93ad91';
     context.globalAlpha=fade*.68;
     context.stroke();
-    context.fillStyle=lane===1?'#b08150':'#608f77';
+    context.fillStyle=lane===1?'#d0ad86':'#b4c4aa';
     for(const dot of [path[0],tip]){
       context.beginPath();context.arc(...dot,3+lane*.45,0,Math.PI*2);context.fill();
     }

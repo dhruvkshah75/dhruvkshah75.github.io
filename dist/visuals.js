@@ -48,8 +48,8 @@ try {
       }`,
     fragmentShader:`varying float vAlpha; varying float vSeed;
       void main(){
-        vec3 sea=vec3(.35,.65,.65);vec3 sky=vec3(.48,.69,.76);vec3 sage=vec3(.59,.75,.66);
-        vec3 color=mix(mix(sea,sky,step(.48,vSeed)),sage,step(.76,vSeed));
+        vec3 graphite=vec3(.33,.38,.34);vec3 nickel=vec3(.52,.55,.49);vec3 sage=vec3(.40,.49,.37);
+        vec3 color=mix(mix(graphite,nickel,step(.48,vSeed)),sage,step(.76,vSeed));
         gl_FragColor=vec4(color,vAlpha);
       }`
   });

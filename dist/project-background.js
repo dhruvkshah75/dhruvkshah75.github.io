@@ -4,11 +4,11 @@ const canvas=document.querySelector('#project-background-canvas');
 const context=canvas.getContext('2d');
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
 const palettes=[
-  ['#fae5d6','#f3c5ae','#e99b7e','#cf755d'], // taskflow: warm coral
-  ['#e0f2f8','#b7ddeb','#79b7d3','#568eb9'], // oxidrop: clear blue
-  ['#f9e4e9','#edbdd2','#d992b3','#b46b96'], // gamesync: rose
-  ['#ebe9fa','#ccc7ee','#a59bdb','#796dbd'], // groundtruth: indigo
-  ['#f9edcf','#eddaa4','#d6b875','#b48e4d']  // cfast: amber
+  ['#29221d','#3d2e25','#594031','#79553f'], // taskflow
+  ['#20282a','#29393e','#3e555b','#52747c'], // oxidrop
+  ['#292127','#3c2d37','#573d50','#78536d'], // gamesync
+  ['#24222c','#333041','#49445e','#645d7f'], // groundtruth
+  ['#29271f','#3b3524','#534a31','#726541']  // cfast
 ];
 let frame=0,lastTime=0,palette=palettes[0],patterns=[],width=0,height=0,startTime=0;
 const tile=24;
