@@ -108,7 +108,7 @@ function loadProjectArt() {
 }
 let stackLoad;
 function loadStack() {
-  return stackLoad ??= import('./processor.js?v=scenes').then(module=>module.startProcessor()).catch(error=>{
+  return stackLoad ??= import('./processor.js?v=section-flow').then(module=>module.startProcessor()).catch(error=>{
     console.warn('Processor illustration unavailable',error);
   });
 }
@@ -175,7 +175,10 @@ function update() {
   const aboutReveal=reduced.matches?1:smooth((home-.68)/.27);
   renderAboutTape(aboutRect.top,vh);
   const stackPresence=presence(stackPanel.getBoundingClientRect());
-  const grid=Math.max(presence(aboutRect)*aboutReveal,presence(exp),stackPresence*.73);
+  const contactHandoff=clamp((vh-contactRect.top)/(vh*.86));
+  const contactArrival=smooth(contactHandoff);
+  const grid=Math.max(presence(aboutRect)*aboutReveal,presence(exp),stackPresence*.73,
+    .31*contactArrival*(1-contactHandoff));
   const handoff=reduced.matches?0:clamp((vh*.86-projectGap.getBoundingClientRect().top)/(vh*.91));
   const exit=smooth(handoff/.64);
   drawExperienceSignal(handoff);
@@ -187,9 +190,11 @@ function update() {
   root.style.setProperty('--exit-project',exit);
   root.style.setProperty('--hero-presence',1-home);
   root.style.setProperty('--project-presence',presence(projectsRect));
-  root.style.setProperty('--contact-presence',presence(contactRect));
+  root.style.setProperty('--contact-presence',contactArrival);
   root.style.setProperty('--experience-reveal',smooth((vh-exp.top)/(vh*.56)));
-  root.style.setProperty('--experience-departure',smooth(exp.bottom/(vh*.65)));
+  contact.style.setProperty('--contact-arrival',reduced.matches?1:contactArrival);
+  contact.style.setProperty('--contact-trace',smooth((contactHandoff-.05)/.63));
+  contact.style.setProperty('--contact-trace-opacity',Math.sin(Math.PI*contactHandoff));
   experience.style.setProperty('--experience-pin-top',Math.min(0,vh-experience.offsetHeight)+'px');
   const position=clamp(-projectsRect.top/projectRange())*(projects.length-1);
   current=Math.round(position);

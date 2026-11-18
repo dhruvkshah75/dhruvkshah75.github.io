@@ -241,6 +241,7 @@ export async function startProcessor() {
   let frame=0,last=0,width=0,height=0,lost=false,layoutDirty=true,progress=0,targetProgress=0,visible=false;
   let touch;
   const angle = Math.PI * 2;
+  const maxRadiansPerSecond = Math.PI * .58;
   stack.tabIndex=0;
   stack.setAttribute('aria-label','Processor model. Scroll to separate the layers. Move horizontally or use the Left and Right arrow keys to rotate.');
   stack.setAttribute('role','group');
@@ -263,7 +264,7 @@ export async function startProcessor() {
     if(changed)measure();
     display.hidden=!visible;
     if(!visible||document.querySelector('dialog[open]'))return;
-    if(changed||now-last>=1000/32) {
+    if(changed||reduced.matches||now-last>=1000/32) {
       const dt=Math.min(80,now-last);last=now;
       progress=mix(progress,targetProgress,reduced.matches?1:1-Math.exp(-dt*.021));
       if(Math.abs(progress-targetProgress)<.002)progress=targetProgress;
@@ -272,8 +273,10 @@ export async function startProcessor() {
       const shift=showLabels*.64;
       camera.left=-span*width/height/2+shift;camera.right=span*width/height/2+shift;
       camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();
-      const damping=reduced.matches?1:1-Math.exp(-dt*.014);
-      yaw=mix(yaw,goalYaw,damping);
+      const yawDelta=goalYaw-yaw;
+      const maxStep=maxRadiansPerSecond*dt/1000;
+      const step=yawDelta*(1-Math.exp(-dt*.008));
+      yaw+=reduced.matches?yawDelta:THREE.MathUtils.clamp(step,-maxStep,maxStep);
       orbit.set(14,Math.PI/2-elevation,yaw);
       camera.position.setFromSpherical(orbit);
       camera.lookAt(0,0,0);
@@ -300,20 +303,21 @@ export async function startProcessor() {
     }
     if(!reduced.matches&&(progress!==targetProgress||Math.abs(yaw-goalYaw)>.002))frame=requestAnimationFrame(draw);
   }
-  function invalidate(){layoutDirty=true;if(!frame)frame=requestAnimationFrame(draw)}
+  function queueDraw(){if(!frame)frame=requestAnimationFrame(draw)}
+  function invalidate(){layoutDirty=true;queueDraw()}
   stack.addEventListener('pointermove',event=>{
     if (event.pointerType==='touch') {
       if(!touch||touch.id!==event.pointerId)return;
-      goalYaw=touch.yaw+(event.clientX-touch.x)*.024;
+      goalYaw=touch.yaw+(event.clientX-touch.x)*.013;
     } else {
       const rect=stack.getBoundingClientRect();
       goalYaw=defaultYaw+((event.clientX-rect.left)/rect.width-.5)*angle;
     }
-    invalidate();
+    queueDraw();
   },{passive:true});
   stack.addEventListener('pointerleave',()=>{
     if(touch)return;
-    goalYaw=defaultYaw;invalidate();
+    goalYaw=defaultYaw;queueDraw();
   });
   stack.addEventListener('pointerdown',event=>{
     if(event.pointerType==='touch'){
@@ -325,8 +329,8 @@ export async function startProcessor() {
   stack.addEventListener('keydown',event=>{
     if(event.key!=='ArrowLeft'&&event.key!=='ArrowRight')return;
     event.preventDefault();
-    goalYaw+=event.key==='ArrowLeft'?-.24:.24;
-    invalidate();
+    goalYaw+=event.key==='ArrowLeft'?-.18:.18;
+    queueDraw();
   });
   window.addEventListener('scroll',invalidate,{passive:true});window.addEventListener('resize',invalidate);
   reduced.addEventListener('change',invalidate);
