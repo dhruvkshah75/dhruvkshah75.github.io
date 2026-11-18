@@ -8,10 +8,10 @@
   <script src="./boot.js?v=revision"></script>
   <link rel="preload" href="./assets/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="./assets/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./style.css?v=blue">
+  <link rel="stylesheet" href="./style.css?v=about-tape">
   <link rel="modulepreload" href="./assets/three.core.js">
   <link rel="modulepreload" href="./assets/three.module.js">
-  <script type="module" src="./app.js?v=blue"></script>
+  <script type="module" src="./app.js?v=about-tape"></script>
 </head>
 <body>
   <div class="boot-screen" role="status" aria-label="Loading portfolio">
@@ -36,7 +36,24 @@
     </section>
     <div class="transition-gap" id="home-transition" aria-hidden="true"></div>
     </div>
-    <section class="about section" id="about"><div class="edge edge-about" aria-hidden="true"></div><div class="section-inner"><div class="about-grid"><h2><span>Curiosity is</span><span>where it</span><em>starts.</em></h2><div class="about-copy"><p class="lead">I like to understand how things work, then build something better.</p><p>I’m a computer science student at BITS Pilani, Goa, with a focus on distributed systems and backend architecture. I’m drawn to the details behind the scenes: the systems that make everything else work.</p><p>My projects explore background task processing, developer tools, and multiplayer networking—one idea at a time.</p></div></div></div></section>
+    <section class="about" id="about" aria-labelledby="about-heading">
+      <div class="about-stage">
+        <div class="section-inner about-gesture">
+          <div class="tape-track">
+            <div class="tape-thread" aria-hidden="true"></div>
+            <div class="about-tape"><h2 id="about-heading">Curiosity is where it <em>starts.</em></h2></div>
+            <div class="tape-curl" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="section-inner about-copy">
+          <p class="lead">I like to understand how things work, then build something better.</p>
+          <div>
+            <p>I’m a computer science student at BITS Pilani, Goa, with a focus on distributed systems and backend architecture. I’m drawn to the details behind the scenes: the systems that make everything else work.</p>
+            <p>My projects explore background task processing, developer tools, and multiplayer networking—one idea at a time.</p>
+          </div>
+        </div>
+      </div>
+    </section>
     </div>
     <div class="stack-sequence" id="stack">
       <section class="stack-panel" aria-labelledby="stack-heading">

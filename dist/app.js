@@ -1,4 +1,5 @@
 import { createSectionTransition } from './section-transition.js?v=revision';
+import { createAboutTape, aboutLandingOffset } from './about-tape.js';
 import { drawExperienceSignal } from './experience-transition.js?v=blue';
 import { showProjectBackground, hideProjectBackground } from './project-background.js?v=blue';
 
@@ -70,6 +71,7 @@ const stackPanel=get('.stack-panel');
 const gap = get('#home-transition'), projectGap = get('#project-transition');
 const counter = get('#project-counter'), prev = get('#prev-project'), next = get('#next-project');
 const experience = get('#experience'), about = get('#about'), contact = get('#contact');
+const renderAboutTape = createAboutTape(about,reduced);
 const clamp = x => Math.max(0,Math.min(1,x));
 const smooth = x => {x=clamp(x);return x*x*(3-2*x)};
 const boot = detail => document.dispatchEvent(new CustomEvent('portfolio:load',{detail}));
@@ -106,7 +108,7 @@ function loadProjectArt() {
 }
 let stackLoad;
 function loadStack() {
-  return stackLoad ??= import('./processor.js?v=blue').then(module=>module.startProcessor()).catch(error=>{
+  return stackLoad ??= import('./processor.js?v=scenes').then(module=>module.startProcessor()).catch(error=>{
     console.warn('Processor illustration unavailable',error);
   });
 }
@@ -171,7 +173,7 @@ function update() {
   const home=clamp((vh-gap.getBoundingClientRect().top)/Math.max(1,gap.offsetHeight));
   const presence=r=>smooth((vh-r.top)/(vh*.65))*smooth(r.bottom/(vh*.75));
   const aboutReveal=reduced.matches?1:smooth((home-.68)/.27);
-  root.style.setProperty('--about-reveal',aboutReveal);
+  renderAboutTape(aboutRect.top,vh);
   const stackPresence=presence(stackPanel.getBoundingClientRect());
   const grid=Math.max(presence(aboutRect)*aboutReveal,presence(exp),stackPresence*.73);
   const handoff=reduced.matches?0:clamp((vh*.86-projectGap.getBoundingClientRect().top)/(vh*.91));
@@ -223,7 +225,8 @@ window.addEventListener('resize',requestUpdate);reduced.addEventListener('change
 function navigate(id,behavior) {
   const target=id==='experience'?get('.experience-frame'):document.getElementById(id);
   if(!target)return;
-  const top=id==='home'?0:scrollY+target.getBoundingClientRect().top;
+  const aboutOffset=id==='about'&&!reduced.matches?aboutLandingOffset(innerHeight):0;
+  const top=id==='home'?0:scrollY+target.getBoundingClientRect().top+aboutOffset;
   window.scrollTo({top,behavior});
 }
 const sectionIds=['stack',...destinations.map(dest=>dest.id)];

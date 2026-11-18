@@ -235,8 +235,8 @@ export async function startProcessor() {
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(8,6.3),new THREE.MeshBasicMaterial({map:shadowTexture,transparent:true,depthWrite:false}));
   shadow.rotation.x=-Math.PI/2;scene.add(shadow);
   const orbit = new THREE.Spherical();
-  const defaultYaw = .64;
-  const elevation = .39; // Keep the top surfaces visible throughout the horizontal orbit.
+  const defaultYaw = -.55;
+  const elevation = .435; // Keep the top surfaces visible throughout the horizontal orbit.
   let yaw=defaultYaw,goalYaw=defaultYaw;
   let frame=0,last=0,width=0,height=0,lost=false,layoutDirty=true,progress=0,targetProgress=0,visible=false;
   let touch;
@@ -267,7 +267,7 @@ export async function startProcessor() {
       const dt=Math.min(80,now-last);last=now;
       progress=mix(progress,targetProgress,reduced.matches?1:1-Math.exp(-dt*.021));
       if(Math.abs(progress-targetProgress)<.002)progress=targetProgress;
-      const span=Math.max(mix(5.2,12.65,progress),6.9*height/width);
+      const span=Math.max(mix(5.2,13.15,progress),6.9*height/width);
       const showLabels=width>505 ? smooth(.76,1,progress) : 0;
       const shift=showLabels*.64;
       camera.left=-span*width/height/2+shift;camera.right=span*width/height/2+shift;
