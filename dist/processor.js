@@ -1,4 +1,5 @@
 import * as THREE from './assets/three.module.js';
+import { createTimeline } from './assets/anime.esm.min.js';
 
 const smooth = (low, high, value) => THREE.MathUtils.smoothstep(value, low, high);
 const mix = THREE.MathUtils.lerp;
@@ -188,6 +189,7 @@ export async function startProcessor() {
   if (!response.ok) throw new Error('Could not load processor keyframes');
   const {stages} = await response.json();
   const stack = document.getElementById('stack-chip'), sequence = document.getElementById('stack');
+  const preview = document.getElementById('about-chip'), aboutStage=preview.closest('.about-stage');
   const panel = sequence.querySelector('.stack-panel');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const display = document.createElement('div');display.className = 'chip-display';display.ariaHidden = 'true';
@@ -196,7 +198,7 @@ export async function startProcessor() {
   renderer.setClearColor(0,0);
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
   display.append(renderer.domElement);
-  stack.append(display);
+  sequence.closest('main').append(display);
   const scene = new THREE.Scene();
   const studio = paintedSurface(ctx => {
     ctx.fillStyle = '#8c9994';ctx.fillRect(0,0,768,768);ctx.fillStyle = '#eff5eb';ctx.fillRect(0,0,768,330);
@@ -235,10 +237,15 @@ export async function startProcessor() {
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(8,6.3),new THREE.MeshBasicMaterial({map:shadowTexture,transparent:true,depthWrite:false}));
   shadow.rotation.x=-Math.PI/2;scene.add(shadow);
   const orbit = new THREE.Spherical();
-  const defaultYaw = -.55;
-  const elevation = .435; // Keep the top surfaces visible throughout the horizontal orbit.
+  const defaultYaw = -.68;
+  const elevation = .52;
+  const flight={travel:0,bank:0};
+  const flightMotion=createTimeline({autoplay:false})
+    .add(flight,{travel:[0,1],duration:1000,ease:'inOutCubic'},0)
+    .add(flight,{bank:[0,1],duration:1000,ease:'inOutSine'},0);
   let yaw=defaultYaw,goalYaw=defaultYaw;
   let frame=0,last=0,width=0,height=0,lost=false,layoutDirty=true,progress=0,targetProgress=0,visible=false;
+  let bufferWidth=0,bufferHeight=0,flightProgress=-1;
   let touch;
   const angle = Math.PI * 2;
   const maxRadiansPerSecond = Math.PI * .58;
@@ -247,14 +254,37 @@ export async function startProcessor() {
   stack.setAttribute('role','group');
 
   function measure() {
-    const rect=stack.getBoundingClientRect(), bounds=sequence.getBoundingClientRect();
-    visible=rect.bottom>0 && rect.top<innerHeight;
-    const travel=sequence.offsetHeight-panel.offsetHeight;
+    const destination=stack.getBoundingClientRect(), bounds=sequence.getBoundingClientRect();
+    const nextFlight=reduced.matches?1:THREE.MathUtils.clamp((innerHeight*.82-bounds.top)/(innerHeight*.78),0,1);
+    if(flightProgress!==nextFlight){
+      flightProgress=nextFlight;
+      flightMotion.seek(flightProgress*flightMotion.duration);
+      panel.style.setProperty('--stack-intro',smooth(.53,.88,flightProgress));
+    }
+    const source=flightProgress===1?destination:preview.getBoundingClientRect();
+    const {travel,bank}=flight;
+    width=mix(source.width,destination.width,travel);
+    height=mix(source.height,destination.height,travel);
+    const arc=Math.sin(Math.PI*bank);
+    const left=mix(source.left,destination.left,travel)+arc*Math.min(34,innerWidth*.055);
+    const top=mix(source.top,destination.top,travel)+arc*Math.min(82,innerHeight*.105);
+    const previewOpacity=Number(aboutStage.style.getPropertyValue('--bio-opacity')||1);
+    const opacity=mix(previewOpacity,1,travel);
+    visible=top+height>0 && top<innerHeight && opacity>.001;
+    const teardownDistance=sequence.offsetHeight-panel.offsetHeight;
     // Hold the intact package after it enters the viewport, then unpack it while pinned.
-    targetProgress=reduced.matches?1:smooth(.16,.78,-bounds.top/Math.max(1,travel));
+    targetProgress=reduced.matches?1:smooth(.16,.78,-bounds.top/Math.max(1,teardownDistance));
     if(!visible||reduced.matches)progress=targetProgress;
-    const w=Math.max(1,Math.round(rect.width)),h=Math.max(1,Math.round(rect.height));
-    if(width!==w||height!==h){width=w;height=h;renderer.setSize(w,h,false)}
+    if(visible){
+      display.style.width=width+'px';
+      display.style.height=height+'px';
+      display.style.transform='translate3d('+left+'px,'+top+'px,0)';
+      display.style.opacity=opacity;
+      const w=Math.max(1,Math.round(destination.width)),h=Math.max(1,Math.round(destination.height));
+      if(bufferWidth!==w||bufferHeight!==h){
+        bufferWidth=w;bufferHeight=h;renderer.setSize(w,h,false);
+      }
+    }
     layoutDirty=false;
   }
   function draw(now) {
@@ -277,7 +307,10 @@ export async function startProcessor() {
       const maxStep=maxRadiansPerSecond*dt/1000;
       const step=yawDelta*(1-Math.exp(-dt*.008));
       yaw+=reduced.matches?yawDelta:THREE.MathUtils.clamp(step,-maxStep,maxStep);
-      orbit.set(14,Math.PI/2-elevation,yaw);
+      const flightBank=Math.sin(Math.PI*flight.bank);
+      const viewYaw=mix(-.49,yaw,flight.travel)-flightBank*.26;
+      const viewElevation=elevation+flightBank*.13;
+      orbit.set(14,Math.PI/2-viewElevation,viewYaw);
       camera.position.setFromSpherical(orbit);
       camera.lookAt(0,0,0);
       const index=stages.findLastIndex(stage=>stage.at<=progress);
@@ -336,8 +369,13 @@ export async function startProcessor() {
   reduced.addEventListener('change',invalidate);
   document.addEventListener('visibilitychange',invalidate);
   document.getElementById('project-dialog').addEventListener('close',invalidate);
-  renderer.domElement.addEventListener('webglcontextlost',()=>{lost=true;display.hidden=true;document.documentElement.classList.remove('has-chip')});
-  renderer.domElement.addEventListener('webglcontextrestored',()=>{lost=false;invalidate()});
-  new ResizeObserver(invalidate).observe(stack);
+  renderer.domElement.addEventListener('webglcontextlost',event=>{
+    event.preventDefault();lost=true;display.hidden=true;panel.style.removeProperty('--stack-intro');
+    document.documentElement.classList.remove('has-chip');
+  });
+  renderer.domElement.addEventListener('webglcontextrestored',()=>{lost=false;flightProgress=-1;invalidate()});
+  const resize=new ResizeObserver(invalidate);
+  resize.observe(stack);
+  resize.observe(preview);
   draw(performance.now());
 }

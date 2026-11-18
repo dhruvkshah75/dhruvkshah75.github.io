@@ -3,7 +3,9 @@ import * as THREE from './assets/three.module.js';
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const hero = document.querySelector('#home');
 const pointer = new THREE.Vector2(-10000, -10000);
-window.addEventListener('pointermove', event => pointer.set(event.clientX, innerHeight - event.clientY), {passive:true});
+window.addEventListener('pointermove',event=>{
+  if(event.pointerType!=='touch')pointer.set(event.clientX,innerHeight-event.clientY);
+},{passive:true});
 window.addEventListener('pointerleave', () => pointer.set(-10000, -10000));
 new IntersectionObserver(([entry]) => document.body.classList.toggle('at-home', entry.isIntersecting), {threshold:.1}).observe(hero);
 
@@ -18,7 +20,7 @@ try {
     vertexShader:`
       attribute float seed;
       uniform float uTime; uniform vec2 uResolution; uniform vec2 uMouse; uniform float uDpr; uniform float uHome; uniform float uProject; uniform float uContact; uniform float uFill; uniform float uSection; uniform float uStack; uniform float uCell; uniform float uHeroFlight; uniform float uHeroArrival;
-      varying float vAlpha; varying float vSeed;
+      varying float vAlpha; varying float vSeed; varying float vCursor;
       void main(){
         vec2 px=(position.xy*.5+.5)*uResolution;
         float edge=min(min(px.x,uResolution.x-px.x),min(px.y,uResolution.y-px.y));
@@ -35,21 +37,24 @@ try {
         float band=1.0-smoothstep(contour*.45,contour+mix(feather,45.0,mobile),edge);
         float activeEdge=smoothstep(contour*.35,contour+20.0,edge);
         float twinkle=mix(.5+.5*sin(uTime*1.9+seed*12.0+px.x*.025+px.y*.018),.5,uSection);
-        float nearMouse=1.0-smoothstep(0.0,170.0,distance(px,uMouse));
+        float nearMouse=1.0-smoothstep(20.0,145.0,distance(px,uMouse));
         float density=smoothstep(.04,.36,seed+band*.65);
         vAlpha=band*density*(.29+activeEdge*twinkle*.25+nearMouse*.44);
         vAlpha*=1.-smoothstep(.12,.48,uHeroFlight);
         float arrivalCell=smoothstep(seed*.55,seed*.55+.45,uHeroArrival);
         vAlpha=mix(vAlpha,.18+seed*.16+nearMouse*.38,max(uSection,arrivalCell));
         vAlpha+=uStack*(band*.17+nearMouse*.28);
+        vAlpha=max(vAlpha,nearMouse*.56);
+        vCursor=nearMouse;
         vSeed=seed;
         gl_PointSize=uCell*uDpr*mix(mix(1.01,.65+twinkle*.46,activeEdge)*(1.0+nearMouse*.08),1.01,uSection);
         gl_Position=vec4(position,1.0);
       }`,
-    fragmentShader:`varying float vAlpha; varying float vSeed;
+    fragmentShader:`varying float vAlpha; varying float vSeed; varying float vCursor;
       void main(){
         vec3 sea=vec3(.35,.65,.65);vec3 sky=vec3(.48,.69,.76);vec3 sage=vec3(.59,.75,.66);
         vec3 color=mix(mix(sea,sky,step(.48,vSeed)),sage,step(.76,vSeed));
+        color=mix(color,vec3(.19,.61,.70),vCursor*.65);
         gl_FragColor=vec4(color,vAlpha);
       }`
   });

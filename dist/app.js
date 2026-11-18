@@ -1,5 +1,5 @@
 import { createSectionTransition } from './section-transition.js?v=revision';
-import { createAboutTape, aboutLandingOffset } from './about-tape.js';
+import { createAboutTape, aboutLandingOffset } from './about-tape.js?v=chip-dock';
 import { drawExperienceSignal } from './experience-transition.js?v=blue';
 import { showProjectBackground, hideProjectBackground } from './project-background.js?v=blue';
 
@@ -108,17 +108,18 @@ function loadProjectArt() {
 }
 let stackLoad;
 function loadStack() {
-  return stackLoad ??= import('./processor.js?v=section-flow').then(module=>module.startProcessor()).catch(error=>{
+  return stackLoad ??= import('./processor.js?v=chip-dock').then(module=>module.startProcessor()).catch(error=>{
     console.warn('Processor illustration unavailable',error);
   });
 }
-const nearStack=new IntersectionObserver(([entry])=>{
-  if(entry.isIntersecting){nearStack.disconnect();loadStack()}
-},{rootMargin:'100% 0px'});
-nearStack.observe(get('#stack'));
+const nearChip=new IntersectionObserver(entries=>{
+  if(entries.some(entry=>entry.isIntersecting)){nearChip.disconnect();loadStack()}
+},{rootMargin:'320px 0px'});
+nearChip.observe(about);
+nearChip.observe(get('#stack'));
 async function prepareDestination(id) {
   if(id==='projects') await loadProjectArt();
-  if(id==='stack') await loadStack();
+  if(id==='about'||id==='stack') await loadStack();
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 }
 const nearProjects = new IntersectionObserver(([entry])=>{
@@ -175,7 +176,7 @@ function update() {
   const aboutReveal=reduced.matches?1:smooth((home-.68)/.27);
   renderAboutTape(aboutRect.top,vh);
   const stackPresence=presence(stackPanel.getBoundingClientRect());
-  const contactHandoff=clamp((vh-contactRect.top)/(vh*.86));
+  const contactHandoff=clamp((vh-contactRect.top)/(vh*.94));
   const contactArrival=smooth(contactHandoff);
   const grid=Math.max(presence(aboutRect)*aboutReveal,presence(exp),stackPresence*.73,
     .31*contactArrival*(1-contactHandoff));
@@ -193,8 +194,6 @@ function update() {
   root.style.setProperty('--contact-presence',contactArrival);
   root.style.setProperty('--experience-reveal',smooth((vh-exp.top)/(vh*.56)));
   contact.style.setProperty('--contact-arrival',reduced.matches?1:contactArrival);
-  contact.style.setProperty('--contact-trace',smooth((contactHandoff-.05)/.63));
-  contact.style.setProperty('--contact-trace-opacity',Math.sin(Math.PI*contactHandoff));
   experience.style.setProperty('--experience-pin-top',Math.min(0,vh-experience.offsetHeight)+'px');
   const position=clamp(-projectsRect.top/projectRange())*(projects.length-1);
   current=Math.round(position);
@@ -262,7 +261,7 @@ async function prepareIntro() {
       document.fonts.load('500 24px "DM Sans"'),
       document.fonts.load('570 24px Geist')
     ]),()=> 'Ready'),
-    track('field',import('./visuals.js?v=blue'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
+    track('field',import('./visuals.js?v=chip-dock'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
     track('scene',import('./hero-transition.js?v=blue').then(module=>module.ready),
       ()=> root.classList.contains('has-fracture')?'Online':'Static')
   ]);

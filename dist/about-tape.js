@@ -9,12 +9,11 @@ export function aboutLandingOffset(viewportHeight) {
 
 export function createAboutTape(section, reducedMotion) {
   const stage = section.querySelector('.about-stage');
-  const state = {thread:0, length:0, curl:0, copy:0, rise:22};
+  const state = {length:0, curlIn:0, curlOut:0, copy:0, rise:22};
   const timeline = createTimeline({autoplay:false})
-    .add(state, {thread:[0,1], duration:190, ease:'outQuad'}, 0)
-    .add(state, {length:[0,1], duration:615, ease:'inOutSine'}, 90)
-    .add(state, {curl:[0,1], duration:80}, 100)
-    .add(state, {curl:[1,0], duration:85}, 620)
+    .add(state, {length:[0,1], duration:705, ease:'inOutSine'}, 0)
+    .add(state, {curlIn:[0,1], duration:80}, 100)
+    .add(state, {curlOut:[0,1], duration:85}, 620)
     .add(state, {copy:[0,1], rise:[22,0], duration:275, ease:'outCubic'}, 725);
   let previous;
 
@@ -28,9 +27,8 @@ export function createAboutTape(section, reducedMotion) {
     previous = progress;
 
     timeline.seek(progress * timeline.duration);
-    stage.style.setProperty('--thread',state.thread);
     stage.style.setProperty('--tape',state.length);
-    stage.style.setProperty('--tape-curl',state.curl);
+    stage.style.setProperty('--tape-curl',state.curlIn*(1-state.curlOut));
     stage.style.setProperty('--curl-width',.84 + .16 * Math.cos(state.length * 25));
     stage.style.setProperty('--bio-opacity',state.copy);
     stage.style.setProperty('--bio-shift',state.rise + 'px');

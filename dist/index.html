@@ -8,10 +8,10 @@
   <script src="./boot.js?v=revision"></script>
   <link rel="preload" href="./assets/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="./assets/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./style.css?v=section-flow">
+  <link rel="stylesheet" href="./style.css?v=chip-dock">
   <link rel="modulepreload" href="./assets/three.core.js">
   <link rel="modulepreload" href="./assets/three.module.js">
-  <script type="module" src="./app.js?v=section-flow"></script>
+  <script type="module" src="./app.js?v=chip-dock"></script>
 </head>
 <body>
   <div class="boot-screen" role="status" aria-label="Loading portfolio">
@@ -40,17 +40,21 @@
       <div class="about-stage">
         <div class="about-gesture">
           <div class="tape-track">
-            <div class="tape-thread" aria-hidden="true"></div>
             <div class="about-tape"><h2 id="about-heading">Curiosity is where it <em>starts.</em></h2></div>
             <div class="tape-curl" aria-hidden="true"></div>
           </div>
         </div>
-        <div class="section-inner about-copy">
-          <p class="lead">I like to understand how things work, then build something better.</p>
-          <div>
-            <p>I’m a computer science student at BITS Pilani, Goa, with a focus on distributed systems and backend architecture. I’m drawn to the details behind the scenes: the systems that make everything else work.</p>
-            <p>My projects explore background task processing, developer tools, and multiplayer networking—one idea at a time.</p>
+        <div class="section-inner about-layout">
+          <div class="about-copy">
+            <p class="lead">I like to understand how things work, then build something better.</p>
+            <div>
+              <p><strong>I’m Dhruv, a computer science student at BITS Pilani, Goa.</strong> I focus on distributed systems and backend architecture. I’m drawn to the details behind the scenes: the systems that make everything else work.</p>
+              <p>My projects explore background task processing, developer tools, and multiplayer networking—one idea at a time.</p>
+            </div>
           </div>
+          <figure class="chip-figure about-figure" aria-label="Assembled DS–01 processor">
+            <div class="chip-mount" id="about-chip"><div class="chip-fallback" aria-hidden="true"><i></i><i></i><i></i><i>DS–01</i></div></div>
+          </figure>
         </div>
       </div>
     </section>
@@ -82,13 +86,9 @@
     <section class="experience section" id="experience"><div class="edge edge-experience" aria-hidden="true"></div><div class="section-inner"><div class="experience-layout"><div><h2>Learning by<br><em>doing.</em></h2><p class="section-description">A little of where I’ve been, and what I’ve been learning along the way.</p></div><div class="timeline"><article class="timeline-item"><span class="timeline-dot"></span><div class="timeline-meta">RESEARCH EXPERIENCE <span>01</span></div><h3>Undergraduate Research Intern</h3><p class="timeline-place">GenQuery Technologies Pvt. Ltd.</p><p>Working on a parameterized Text-to-SQL benchmark to evaluate how language models translate natural-language questions into SQL across levels of complexity.</p></article><article class="timeline-item"><span class="timeline-dot"></span><div class="timeline-meta">EDUCATION <span>02</span></div><h3>BITS Pilani, Goa</h3><p class="timeline-place">Computer science &amp; systems</p><p>Studying operating systems, algorithms, database systems, distributed systems, and backend architecture.</p></article></div></div></div></section>
     </div>
     <section class="contact section" id="contact">
-      <svg class="contact-trace" viewBox="0 0 520 64" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M516 7H316Q305 7 298 15L274 44Q268 52 256 52H8" pathLength="1"/>
-      </svg>
-      <div class="section-inner"><div class="contact-content"><h2>Have something<br><em>in mind?</em></h2><p>An idea, an interesting problem, or a simple hello.<br>I’d love to hear from you.</p><div class="contact-actions"><a class="social-link" href="mailto:dhruvkshah75@gmail.com"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="m3.5 6 8.5 7 8.5-7"/></svg><span>Email</span></a><a class="social-link" href="https://github.com/dhruvkshah75" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.54v-2.16c-3.1.67-3.76-1.31-3.76-1.31-.5-1.28-1.23-1.62-1.23-1.62-1.01-.69.08-.68.08-.68 1.11.08 1.7 1.14 1.7 1.14.99 1.7 2.59 1.21 3.22.93.1-.72.39-1.21.7-1.49-2.48-.28-5.08-1.24-5.08-5.52 0-1.22.44-2.22 1.14-3-.11-.28-.49-1.42.11-2.95 0 0 .93-.3 3.05 1.15a10.6 10.6 0 0 1 5.55 0c2.12-1.44 3.05-1.15 3.05-1.15.6 1.53.22 2.67.11 2.95.71.78 1.14 1.78 1.14 3.01 0 4.29-2.6 5.23-5.09 5.51.4.35.76 1.03.76 2.07v3.07c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z"/></svg><span>GitHub</span></a><a class="social-link" href="https://www.linkedin.com/in/dhruv-shah-31a136207/" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 2H3.55C2.69 2 2 2.68 2 3.52v16.96c0 .84.69 1.52 1.55 1.52h16.9c.86 0 1.55-.68 1.55-1.52V3.52C22 2.68 21.31 2 20.45 2ZM7.93 18.75H4.96V9.2h2.97v9.55ZM6.44 7.9a1.72 1.72 0 1 1 0-3.44 1.72 1.72 0 0 1 0 3.44Zm12.31 10.85h-2.96V14.1c0-1.11-.02-2.54-1.55-2.54-1.55 0-1.79 1.21-1.79 2.46v4.73H9.5V9.2h2.84v1.3h.04c.4-.75 1.37-1.55 2.82-1.55 3.01 0 3.56 1.98 3.56 4.55v5.25Z"/></svg><span>LinkedIn</span></a></div></div></div>
-      <footer class="contact-footer">
-        <div class="footer-signature"><p>Dhr<span>u</span>v <span>S</span>hah</p></div>
-      </footer>
+      <div class="section-inner"><div class="contact-content"><h2>Have something<br><em>in mind?</em></h2><p>An idea, an interesting problem, or a simple hello.<br>I’d love to hear from you.</p><div class="contact-actions"><a class="social-link" href="mailto:dhruvkshah75@gmail.com"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="m3.5 6 8.5 7 8.5-7"/></svg><span>Email</span></a><a class="social-link" href="https://github.com/dhruvkshah75" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.54v-2.16c-3.1.67-3.76-1.31-3.76-1.31-.5-1.28-1.23-1.62-1.23-1.62-1.01-.69.08-.68.08-.68 1.11.08 1.7 1.14 1.7 1.14.99 1.7 2.59 1.21 3.22.93.1-.72.39-1.21.7-1.49-2.48-.28-5.08-1.24-5.08-5.52 0-1.22.44-2.22 1.14-3-.11-.28-.49-1.42.11-2.95 0 0 .93-.3 3.05 1.15a10.6 10.6 0 0 1 5.55 0c2.12-1.44 3.05-1.15 3.05-1.15.6 1.53.22 2.67.11 2.95.71.78 1.14 1.78 1.14 3.01 0 4.29-2.6 5.23-5.09 5.51.4.35.76 1.03.76 2.07v3.07c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z"/></svg><span>GitHub</span></a><a class="social-link" href="https://www.linkedin.com/in/dhruv-shah-31a136207/" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 2H3.55C2.69 2 2 2.68 2 3.52v16.96c0 .84.69 1.52 1.55 1.52h16.9c.86 0 1.55-.68 1.55-1.52V3.52C22 2.68 21.31 2 20.45 2ZM7.93 18.75H4.96V9.2h2.97v9.55ZM6.44 7.9a1.72 1.72 0 1 1 0-3.44 1.72 1.72 0 0 1 0 3.44Zm12.31 10.85h-2.96V14.1c0-1.11-.02-2.54-1.55-2.54-1.55 0-1.79 1.21-1.79 2.46v4.73H9.5V9.2h2.84v1.3h.04c.4-.75 1.37-1.55 2.82-1.55 3.01 0 3.56 1.98 3.56 4.55v5.25Z"/></svg><span>LinkedIn</span></a></div></div>
+        <footer class="contact-footer"><a href="#home">Back to top ↑</a></footer>
+      </div>
     </section>
   </main>
   <div class="route-screen" popover="manual" hidden aria-hidden="true">
