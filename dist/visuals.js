@@ -20,7 +20,7 @@ try {
     vertexShader:`
       attribute float seed;
       uniform float uTime; uniform vec2 uResolution; uniform vec2 uMouse; uniform float uDpr; uniform float uHome; uniform float uProject; uniform float uContact; uniform float uFill; uniform float uSection; uniform float uStack; uniform float uCell; uniform float uHeroFlight; uniform float uHeroArrival;
-      varying float vAlpha; varying float vSeed;
+      varying float vAlpha; varying float vSeed; varying float vHighlight;
       void main(){
         vec2 px=(position.xy*.5+.5)*uResolution;
         float edge=min(min(px.x,uResolution.x-px.x),min(px.y,uResolution.y-px.y));
@@ -44,16 +44,18 @@ try {
         float arrivalCell=smoothstep(seed*.55,seed*.55+.45,uHeroArrival);
         vAlpha=mix(vAlpha,.18+seed*.16,max(uSection,arrivalCell));
         vAlpha+=uStack*band*.17;
-        // Amplify only the existing field, including its edge fade.
-        vAlpha*=1.0+nearMouse*.5;
+        // Keep the color boost inside visible texture so the pale center stays clear.
+        vHighlight=nearMouse*smoothstep(.11,.29,vAlpha);
+        vAlpha*=1.0+vHighlight*1.25;
         vSeed=seed;
         gl_PointSize=uCell*uDpr*mix(mix(1.01,.65+twinkle*.46,activeEdge),1.01,uSection);
         gl_Position=vec4(position,1.0);
       }`,
-    fragmentShader:`varying float vAlpha; varying float vSeed;
+    fragmentShader:`varying float vAlpha; varying float vSeed; varying float vHighlight;
       void main(){
         vec3 sea=vec3(.35,.65,.65);vec3 sky=vec3(.48,.69,.76);vec3 sage=vec3(.59,.75,.66);
         vec3 color=mix(mix(sea,sky,step(.48,vSeed)),sage,step(.76,vSeed));
+        color=mix(color,vec3(.22,.62,.73),vHighlight*.7);
         gl_FragColor=vec4(color,vAlpha);
       }`
   });

@@ -1,5 +1,5 @@
 import { createSectionTransition } from './section-transition.js?v=revision';
-import { createAboutTape, aboutLandingOffset } from './about-tape.js?v=chip-dock';
+import { createAboutTape, aboutLandingOffset } from './about-tape.js?v=about-reveal';
 import { drawExperienceSignal } from './experience-transition.js?v=blue';
 import { showProjectBackground, hideProjectBackground } from './project-background.js?v=blue';
 
@@ -261,7 +261,7 @@ async function prepareIntro() {
       document.fonts.load('500 24px "DM Sans"'),
       document.fonts.load('570 24px Geist')
     ]),()=> 'Ready'),
-    track('field',import('./visuals.js?v=about-balance'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
+    track('field',import('./visuals.js?v=about-reveal'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
     track('scene',import('./hero-transition.js?v=blue').then(module=>module.ready),
       ()=> root.classList.contains('has-fracture')?'Online':'Static')
   ]);
