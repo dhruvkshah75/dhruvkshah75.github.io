@@ -1,0 +1,9 @@
+{
+  "stages": [
+    {"at": 0, "height": [-0.55, -0.15, 0.02, 0.23], "turn": [0, 0, 0, 0], "name": "Heat spreader", "detail": "A nickel lid draws heat away from the silicon."},
+    {"at": 0.24, "height": [-0.82, -0.42, -0.25, 1.08], "turn": [0, 0, 0, 0.13], "name": "Silicon die", "detail": "The patterned silicon beneath the lid contains the processor’s circuits."},
+    {"at": 0.51, "height": [-1.18, -0.78, 0.31, 1.40], "turn": [0, -0.035, 0.06, 0.15], "name": "Package substrate", "detail": "Copper traces fan signals out from the die to the contact pads."},
+    {"at": 0.78, "height": [-1.96, -0.81, 0.36, 1.53], "turn": [-0.09, -0.035, 0.07, 0.15], "name": "Socket contacts", "detail": "Rows of spring contacts connect the package to the board."},
+    {"at": 1, "height": [-2.16, -0.85, 0.48, 1.72], "turn": [-0.095, -0.04, 0.075, 0.16], "name": "Exploded assembly", "detail": "Lid, die, substrate, and socket share a single alignment axis."}
+  ]
+}

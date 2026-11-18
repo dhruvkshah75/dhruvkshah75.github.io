@@ -5,6 +5,7 @@ const canvas = document.querySelector('#hero-cubes');
 const gap = document.querySelector('#home-transition');
 const copy = document.querySelector('.hero-copy');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+export let ready = Promise.resolve();
 if (canvas && gap && copy && !reducedMotion.matches) {
   try {
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
@@ -52,15 +53,43 @@ if (canvas && gap && copy && !reducedMotion.matches) {
     let width = 0, height = 0, cell = 0, bounds;
     let progress = location.hash && location.hash !== '#home' ? 1 : 0;
     let target = progress, frame = 0, previousTime = 0;
-    let arrivalReleased = false, arrivalReadyAt = 0, touchY = null;
-    let previousScroll = scrollY, lastHash = location.hash;
-    let navigationDestination = null, navigationUntil = 0, navigationSection = null;
-    let navigationSkip = Boolean(lastHash && lastHash !== '#home');
-    const arrivalOffset = () => Math.min(48, innerHeight * .065);
-    const arrivalAnchor = () => scrollY + gap.getBoundingClientRect().bottom - innerHeight - arrivalOffset();
+    let handoff = 0;
     const clamp = x => Math.max(0, Math.min(1, x));
     const random = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
     const smooth = x => { x = clamp(x); return x * x * (3 - 2 * x); };
+
+    // A staggered row of circuit tiles turns edge-on as each section passes.
+    const tileScene = new THREE.Scene();
+    const tileCamera = new THREE.OrthographicCamera(-1,1,1,-1,.1,1800);
+    tileCamera.position.z = 900;
+    tileScene.add(new THREE.HemisphereLight(0xfafdf3,0x517665,2.3));
+    const tileLight = new THREE.DirectionalLight(0xfffbed,2.1);
+    tileLight.position.set(-2,4,5);tileScene.add(tileLight);
+    const tiles = new THREE.InstancedMesh(geometry, new THREE.MeshStandardMaterial({
+      color:0xffffff,roughness:.55,metalness:.18,transparent:true,opacity:.72
+    }), 180);
+    tiles.frustumCulled = false;tileScene.add(tiles);
+    const tileTransform = new THREE.Object3D();
+    const tileColor = new THREE.Color();
+    for(let i=0;i<tiles.count;i++) tiles.setColorAt(i,tileColor.setHex([0xa3c3b4,0x80aaa1,0xe1e6cd,0x91b4b4][i%4]));
+    const destinations = ['#about','#experience','#contact'].map(selector=>document.querySelector(selector));
+    function drawHandoff() {
+      const columns=width<700?15:30, rows=5, spacing=width/columns;
+      tiles.count=columns*rows;
+      tileCamera.left=-width/2;tileCamera.right=width/2;tileCamera.top=height/2;tileCamera.bottom=-height/2;tileCamera.updateProjectionMatrix();
+      for(let i=0;i<tiles.count;i++){
+        const col=i%columns,row=Math.floor(i/columns);
+        const local=clamp(handoff*1.48-col/columns*.25-row*.048);
+        const angle=Math.PI*local, lift=Math.sin(angle);
+        tileTransform.position.set((col+.5)*spacing-width/2, height*(handoff-.52)+row*spacing*.56+Math.sin(col*.4)*spacing*.65, lift*spacing*.8);
+        tileTransform.rotation.set(-angle,.33*lift,.1*lift);
+        const size=spacing*.64*lift;
+        tileTransform.scale.set(size,size,Math.max(.02,size*.17));
+        tileTransform.updateMatrix();tiles.setMatrixAt(i,tileTransform.matrix);
+      }
+      tiles.instanceMatrix.needsUpdate=true;
+      renderer.render(tileScene,tileCamera);
+    }
 
     function sampleText() {
       bounds = copy.getBoundingClientRect();
@@ -227,10 +256,18 @@ if (canvas && gap && copy && !reducedMotion.matches) {
       frame = 0;
       const dt = Math.min(64, previousTime ? now - previousTime : 16);
       previousTime = now;
-      const catchup = (target - progress) * (1 - Math.exp(-dt / 440));
-      // Even a large wheel gesture gets a continuous, readable flight.
-      progress += Math.sign(catchup) * Math.min(Math.abs(catchup), dt / 3200);
+      progress += (target - progress) * (1 - Math.exp(-dt / 80));
       if (Math.abs(target - progress) < .0001) progress = target;
+      if (progress === 1 && target === 1) {
+        // Outside the hero only the section handoff needs rendering.
+        copy.style.opacity='0';copy.style.maskImage='none';
+        document.documentElement.style.setProperty('--hero-pixel-flight','0');
+        document.documentElement.style.setProperty('--hero-pixel-arrival','0');
+        canvas.style.opacity=handoff>0?'1':'0';
+        if(handoff>0)drawHandoff();
+        previousTime=0;
+        return;
+      }
       const time = clamp((progress - .015) / .91) * motion.duration;
       motion.seek(time);
       copy.style.opacity = reducedMotion.matches ? '1' : String(1 - smooth((time - 530) / 90));
@@ -245,15 +282,10 @@ if (canvas && gap && copy && !reducedMotion.matches) {
           * (1 - smooth((progress - .84) / .09));
       }
       alpha.needsUpdate = true;
-      const aboutRect = document.querySelector('#about').getBoundingClientRect();
-      root.setProperty('--hero-pixel-flight', String(aboutRect.top > 0 ? progress : 0));
-      root.setProperty('--hero-pixel-arrival', String(aboutRect.top > 0 ? smooth((progress - .64) / .28) : 0));
-      // The About content is fully revealed by .91. Release the scroll gate at
-      // that point instead of waiting for the easing tail to approach 1.
-      if (progress >= .91 && !arrivalReadyAt) arrivalReadyAt = performance.now();
-      if (progress < .4) { arrivalReadyAt = 0; arrivalReleased = false; }
-      canvas.style.opacity = !reducedMotion.matches && progress > 0 && progress < .94 ? '1' : '0';
-      document.dispatchEvent(new CustomEvent('hero-transition-progress', { detail: progress }));
+      root.setProperty('--hero-pixel-flight', String(progress < 1 ? progress : 0));
+      root.setProperty('--hero-pixel-arrival', String(progress < 1 ? smooth((progress - .64) / .28) * (1-smooth((progress-.92)/.08)) : 0));
+      const inFlight = progress > 0 && progress < .94;
+      canvas.style.opacity = !reducedMotion.matches && (inFlight || handoff > 0) ? '1' : '0';
       const release = geometry.getAttribute('released');
       const cutouts = [];
       for (let i = 0; i < shards.length; i++) {
@@ -277,84 +309,34 @@ if (canvas && gap && copy && !reducedMotion.matches) {
       camera.position.y = height * .5;
       camera.fov = 48;
       camera.updateProjectionMatrix();
-      renderer.render(scene, camera);
+      if (handoff > 0) drawHandoff();
+      else if (inFlight) renderer.render(scene, camera);
       if (progress !== target) frame = requestAnimationFrame(draw);
       else previousTime = 0;
     }
     function update() {
       if (!motion) return;
-      if(navigationDestination!==null){
-        if(Math.abs(scrollY-navigationDestination)<2||performance.now()>navigationUntil){
-          navigationDestination=null;
-        }else{
-          progress=target=navigationSection==='home'?0:1;
-          previousScroll=scrollY;
-          if(!frame)frame=requestAnimationFrame(draw);
-          return;
+      const rect = gap.getBoundingClientRect();
+      target = reducedMotion.matches ? 0 : clamp((height - rect.top) / Math.max(1, rect.height));
+      handoff = 0;
+      if (!reducedMotion.matches && target === 1) {
+        for (const destination of destinations) {
+          const arrival = (height - destination.getBoundingClientRect().top) / height;
+          if (arrival > 0 && arrival < .78) { handoff = arrival / .78; break; }
         }
       }
-      if (location.hash !== lastHash) {
-        lastHash = location.hash;
-        navigationSkip = Boolean(lastHash && lastHash !== '#home');
-      }
-      const anchor = arrivalAnchor();
-      const crossedArrival = previousScroll <= anchor + 2 && scrollY > anchor + 2;
-      if (crossedArrival && !reducedMotion.matches && !arrivalReleased && !navigationSkip) {
-        if (arrivalReadyAt) arrivalReleased = true;
-        else window.scrollTo({ top: anchor, behavior: 'instant' });
-      }
-      previousScroll = scrollY;
-      if (scrollY < innerHeight * .1 && (!location.hash || location.hash === '#home')) navigationSkip = false;
-      const rect = gap.getBoundingClientRect();
-      target = reducedMotion.matches ? 0 : clamp((height - rect.top) / Math.max(1, rect.height - arrivalOffset()));
-      if (document.querySelector('#about').getBoundingClientRect().bottom <= 0) progress = target;
+      if (reducedMotion.matches || rect.bottom < 0) progress = target;
       if (!frame) frame = requestAnimationFrame(draw);
     }
-    function protectArrival(event, delta) {
-      if (reducedMotion.matches || arrivalReleased || navigationSkip || delta <= 0 || event.ctrlKey || document.querySelector('dialog[open]')) return;
-      if (arrivalReadyAt) {
-        arrivalReleased = true;
-        return;
-      }
-      const anchor = arrivalAnchor();
-      if (scrollY <= anchor + 2 && scrollY + delta >= anchor) {
-        event.preventDefault();
-        window.scrollTo({ top: anchor, behavior: 'instant' });
-        update();
-      }
-    }
-    document.addEventListener('portfolio:navigate',event=>{
-      navigationSection=event.detail.section;
-      navigationDestination=event.detail.top;
-      navigationUntil=performance.now()+1500;
-      navigationSkip=navigationSection!=='home';
-      arrivalReleased=navigationSkip;
-      arrivalReadyAt=navigationSkip?performance.now():0;
-      lastHash=location.hash;
-      progress=target=navigationSkip?1:0;
-      if(!frame)frame=requestAnimationFrame(draw);
-    });
-    document.addEventListener('click', event => {
-      const link = event.target.closest?.('a[href^="#"]');
-      if (link && link.hash !== '#home') navigationSkip = true;
-    });
-    addEventListener('keydown', event => {
-      if (event.key === 'End' || event.key === 'Home') navigationSkip = true;
-    });
-    addEventListener('wheel', event => {
-      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1;
-      protectArrival(event, event.deltaY * unit);
-    }, { passive: false });
-    addEventListener('touchstart', event => { touchY = event.touches[0]?.clientY ?? null; }, { passive: true });
-    addEventListener('touchmove', event => {
-      const y = event.touches[0]?.clientY;
-      if (touchY !== null && y !== undefined) protectArrival(event, touchY - y);
-      touchY = y ?? null;
-    }, { passive: false });
     addEventListener('resize', resize);
     addEventListener('scroll', update, { passive: true });
     reducedMotion.addEventListener('change', update);
-    document.fonts.ready.then(resize);
+    ready = document.fonts.ready.then(() => {
+      if (document.documentElement.classList.contains('static-intro')) return;
+      resize();
+      renderer.compile(scene, camera);
+      document.documentElement.classList.add('has-fracture');
+    });
   } catch (error) {
     canvas.style.display = 'none';
     copy.style.maskImage = 'none';

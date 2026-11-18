@@ -21,7 +21,8 @@ The workflow in `.github/workflows/pages.yml` publishes the contents of `dist` o
 - `dist/index.html` contains the page content and structure.
 - `dist/style.css` contains the visual system and responsive layouts.
 - `dist/app.js` contains the five project records and project interactions. Update the `projects` array to add fuller descriptions or change project links.
-- `dist/visuals.js` contains the pixel field and project illustrations.
+- `dist/visuals.js` draws the pixel field. `dist/project-visuals.js` shares each project’s 3D scene between its card and detail view.
+- `dist/processor.js` builds the processor assembly. Its scroll positions and inspection labels are in `dist/processor-motion.json`.
 - `dist/assets/` contains the bundled Three.js files and its license.
 
 The project carousel has a reduced-motion layout; if WebGL is unavailable, the portfolio content remains accessible.

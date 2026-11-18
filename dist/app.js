@@ -1,182 +1,253 @@
-import * as THREE from './assets/three.module.js';
+import { createSectionTransition } from './section-transition.js';
 import { showProjectBackground, hideProjectBackground } from './project-background.js';
 
 const projects = [
-  {name:'taskflow',category:'SYSTEMS',tags:['systems','distributed-systems','job-scheduler','task queue'],description:'Distributed background task processing, built for scalable asynchronous workloads.',features:[['Background Processing','Distributed background task processing, built for scalable asynchronous workloads.'],['Dynamic Execution','Runs uploaded Python scripts on demand without container rebuilds or redeployments.'],['Event-Driven Autoscaling','Scales workers based on live queue depth with graceful shutdowns for active jobs.'],['Fault-Tolerant HA','Guarantees at-least-once delivery via leader election, crash recovery, and strict state consistency.']],stack:'Python · Docker · Kubernetes · FastAPI',github:'https://github.com/dhruvkshah75/TaskFlow',live:'https://taskflow-io.vercel.app'},
-  {name:'oxidrop',category:'TOOLS',tags:['tools','file sharing','file server','self-hosted'],description:'Fast wireless file sync between Linux and mobile devices.',features:[['Wireless File Sync','Fast wireless file sync between Linux and mobile devices.'],['Local Transfers','Moves files directly over local Wi-Fi or a mobile hotspot without needing internet access or third-party cloud uploads.']],stack:'Rust · WebDAV',github:'https://github.com/dhruvkshah75/oxidrop'},
-  {name:'gamesync',category:'GAMES · IN PROGRESS',tags:['websockets','2d-game','concurrency'],description:'A real-time multiplayer game server for state synchronisation and concurrent player communication.',stack:'Go · Sockets',github:'https://github.com/dhruvkshah75/gamesync'},
-  {name:'groundtruth',category:'AI',tags:['AI','ai-agents','knowledge-graph','belief-revision'],description:'An AI agent that checks beliefs against reality, detects conflicts, and reasons across perspectives.',stack:'Python · SQLite · NetworkX',github:'https://github.com/dhruvkshah75/groundtruth'},
-  {name:'cfast',category:'TOOLS',tags:['cli','test-runner','competitve-companion'],description:'Import Codeforces samples, compile C++ solutions, and check outputs, time, and memory.',stack:'Python · CLI',github:'https://github.com/dhruvkshah75/cfast',live:'https://cfast.vercel.app'}
+  {
+    steps:['Queue', 'Dispatch', 'Complete'], topics:['Distributed systems', 'Job scheduler', 'Task queue'],
+    name:'taskflow', category:'Distributed systems',
+    description:'Distributed background task processing, built for scalable asynchronous workloads.',
+    features:[
+      ['Dynamic execution','Workers run uploaded Python scripts on demand without rebuilding their containers.'],
+      ['Queue-driven scaling','Worker capacity follows the queue depth. Active jobs finish before a worker shuts down.'],
+      ['Fault tolerance','Leader election and crash recovery support at-least-once delivery.']
+    ],
+    stack:'Python · Docker · Kubernetes · FastAPI', caption:'Queued jobs move through the worker pool.',
+    github:'https://github.com/dhruvkshah75/TaskFlow', live:'https://taskflow-io.vercel.app'
+  },
+  {
+    steps:['Select file', 'Transfer', 'Receive'], topics:['File sharing', 'File server', 'Self-hosted'],
+    name:'oxidrop', category:'Developer tools',
+    description:'Fast wireless file sync between Linux and mobile devices.',
+    features:[
+      ['Local transfers','A Linux machine serves files over Wi-Fi or a mobile hotspot. The transfer stays on the local network.'],
+      ['Mobile access','A WebDAV client on a phone or tablet connects directly to the server.']
+    ],
+    stack:'Rust · WebDAV', caption:'A file travels from a Linux host to a mobile client.',
+    github:'https://github.com/dhruvkshah75/oxidrop'
+  },
+  {
+    steps:['Input', 'Simulate', 'Synchronise'], topics:['WebSockets', '2D game', 'Concurrency'],
+    name:'gamesync', category:'Multiplayer networking · In progress',
+    description:'A Go multiplayer server in development for real-time state synchronisation.',
+    features:[
+      ['Current build','The health endpoint is runnable. The game simulation, clients, and gateway are planned.'],
+      ['Planned architecture','Players send inputs to an authoritative server that resolves positions, hits, and scores.']
+    ],
+    stack:'Go · Sockets', caption:'Controller input illustrates the planned player-to-server flow.',
+    github:'https://github.com/dhruvkshah75/gamesync'
+  },
+  {
+    steps:['Observe', 'Compare', 'Revise'], topics:['AI agents', 'Knowledge graph', 'Belief revision'],
+    name:'groundtruth', category:'Artificial intelligence',
+    description:'An agent that checks its beliefs against evidence and records what changes.',
+    features:[
+      ['Conflicting evidence','When a simulated sensor disagrees with the stored map, the agent records a belief revision.'],
+      ['Inspectable reasoning','The belief graph, evidence, and execution trace make the decision visible to the reader.']
+    ],
+    stack:'Python · SQLite · NetworkX', caption:'Signals propagate between beliefs in a graph.',
+    github:'https://github.com/dhruvkshah75/groundtruth'
+  },
+  {
+    steps:['Compile', 'Run samples', 'Report'], topics:['CLI', 'Test runner', 'Competitive Companion'],
+    name:'cfast', category:'Developer tools',
+    description:'Import Codeforces samples, compile a C++ solution, and check its output from the terminal.',
+    features:[
+      ['Sample import','Competitive Companion sends the problem’s samples and resource limits to a local listener.'],
+      ['Test runs','One command compiles the solution and reports each verdict, execution time, and peak memory usage.']
+    ],
+    stack:'Python · CLI', caption:'A sample run moves from compilation to verdict.',
+    github:'https://github.com/dhruvkshah75/cfast', live:'https://cfast.vercel.app'
+  }
 ];
-const stage = document.querySelector('#project-stage');
-const section = document.querySelector('#projects');
-const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const dialog = document.querySelector('#project-dialog');
 
-let current = 0;
-let lastFocus;
-projects.forEach((project,index)=>{
-  const card = document.createElement('button');
-  card.type='button'; card.className='project-card'; card.dataset.project=project.name.toLowerCase();
-  card.setAttribute('aria-label',`Open ${project.name} project details`);
-  card.innerHTML=`<span class="card-content">${project.tags ? '' : `<span class="card-top">${project.category}</span>`}<span class="card-title">${project.name}</span>${project.tags ? `<span class="project-tags">${project.tags.map(tag=>`<span>${tag}</span>`).join('')}</span>` : ''}<span class="card-description">${project.description}</span><span class="project-visual project-visual-${index}" aria-hidden="true"><canvas class="project-canvas" width="600" height="480"></canvas></span></span>`;
+const get = selector => document.querySelector(selector);
+const stage = get('#project-stage'), section = get('#projects'), dialog = get('#project-dialog');
+const root = document.documentElement, reduced = matchMedia('(prefers-reduced-motion: reduce)');
+const navLinks = [...document.querySelectorAll('.nav a')];
+const destinations = navLinks.map(link => document.querySelector(link.hash));
+const stackPanel=get('.stack-panel');
+const gap = get('#home-transition'), projectGap = get('#project-transition');
+const counter = get('#project-counter'), prev = get('#prev-project'), next = get('#next-project');
+const experience = get('#experience'), about = get('#about'), contact = get('#contact');
+const clamp = x => Math.max(0,Math.min(1,x));
+const smooth = x => {x=clamp(x);return x*x*(3-2*x)};
+const progress = value => document.dispatchEvent(new CustomEvent('portfolio:load',{detail:value}));
+let current = 0, lastFocus, projectArt, projectArtLoad;
+function sequenceLabels(steps) {
+  return steps.map(text=>{
+    const label=document.createElement('span');label.textContent=text;return label;
+  });
+}
+const cards = projects.map((project,index) => {
+  const card=document.createElement('button');
+  card.type='button';card.className='project-card';card.dataset.project=project.name;
+  card.setAttribute('aria-label','Open '+project.name+' project details');
+  card.innerHTML='<span class="card-content"><span class="card-top"></span><span class="card-title"></span><span class="card-description"></span><span class="card-stack"></span><span class="card-action">Project details <span aria-hidden="true">↗</span></span></span><span class="project-visual" aria-hidden="true"><canvas class="project-canvas" width="800" height="600"></canvas><span class="model-steps"></span></span>';
+  card.querySelector('.card-top').textContent=project.category;
+  card.querySelector('.model-steps').append(...sequenceLabels(project.steps));
+  card.querySelector('.card-title').textContent=project.name;
+  card.querySelector('.card-description').textContent=project.description;
+  card.querySelector('.card-stack').textContent=project.stack;
   card.addEventListener('click',()=>openProject(index));
   stage.append(card);
+  return card;
 });
-const cards=[...document.querySelectorAll('.project-card')];
-let heroCubeProgress = null;
-document.addEventListener('hero-transition-progress', event => {
-  heroCubeProgress = event.detail;
-  updateProjects();
-});
-function updateProjects(){
-  const aboutElement=document.querySelector('#about');
-  aboutElement.style.setProperty('--about-pin-top', `${Math.min(0,innerHeight-aboutElement.offsetHeight)}px`);
-  const about=document.querySelector('#about').getBoundingClientRect();
-  const experienceElement=document.querySelector('#experience');
-  experienceElement.style.setProperty('--experience-pin-top', `${Math.min(0,innerHeight-experienceElement.offsetHeight)}px`);
-  const experience=experienceElement.getBoundingClientRect();
-  const contact=document.querySelector('#contact').getBoundingClientRect();
-  const homeGap=document.querySelector('#home-transition').getBoundingClientRect();
-  const projectGap=document.querySelector('#project-transition').getBoundingClientRect();
-  const rect=section.getBoundingClientRect();
-  const vh=window.innerHeight;
-  const clamp=value=>Math.max(0,Math.min(1,value));
-  const visibility=bounds=>clamp((vh-bounds.top)/(vh*.85))*clamp(bounds.bottom/(vh*.85));
-  const projectPresence=visibility(rect);
-  // Hold the full grid while a section occupies the screen, then ease it out
-  // over the entire departure instead of switching to the edge texture midway.
-  const smooth=value=>{const x=clamp(value);return x*x*(3-2*x)};
-  const gridPresence=(bounds,departure=.65)=>smooth((vh-bounds.top)/(vh*.65))*smooth(bounds.bottom/(vh*departure));
-  const homeArrival=reducedMotion.matches||heroCubeProgress===null?1:smooth((heroCubeProgress-.76)/.15);
-  const sectionGrid=Math.max(gridPresence(about)*homeArrival,gridPresence(experience,.75));
-  // First clear the current screen, then draw the pixel front inward across a dedicated gap.
-  const transition=(bounds,fillStart=.25,clock=null)=>{
-    if(bounds.top>vh || bounds.bottom<=0 || reducedMotion.matches)return {exit:0,fill:0,hold:0};
-    const span=Math.max(1,bounds.height);
-    const progress=clock===null?clamp((vh-bounds.top)/span):clock;
-    const exit=clamp(progress/.6);
-    const fill=clamp((progress-fillStart)/(1-fillStart));
-    return {exit,fill,hold:fill*clamp(bounds.bottom/span)};
-  };
-  const home=transition(homeGap,.40,heroCubeProgress),project=transition(projectGap);
-  const fill=Math.max(heroCubeProgress===null?home.fill:0,project.fill);
-  const homeWash=heroCubeProgress===null?home.hold:home.hold*smooth((heroCubeProgress-.72)/.18);
-  const wash=Math.max(sectionGrid,homeWash,project.hold);
-  // About owns a stable sticky reading stage; no fixed/flow positioning switches.
-  document.documentElement.style.setProperty('--about-reveal',String(clamp((vh-about.top)/(vh*.45))*homeArrival));
-  document.documentElement.style.setProperty('--experience-reveal',String(clamp((vh-experience.top)/(vh*.3))));
-  document.documentElement.style.setProperty('--experience-departure',String(reducedMotion.matches?1:smooth(experience.bottom/(vh*.85))));
-  document.documentElement.style.setProperty('--exit-home',String(home.exit));
-  // Use the same exit timing as the hero while the pixel border fills inward.
-  document.documentElement.style.setProperty('--exit-project',String(project.exit));
-  document.documentElement.style.setProperty('--pixel-fill',String(fill));
-  document.documentElement.style.setProperty('--pixel-transition',String(Math.sin(Math.PI*fill)));
-  document.documentElement.style.setProperty('--wash',String(wash));
-  document.documentElement.style.setProperty('--section-grid',String(sectionGrid));
-  document.documentElement.style.setProperty('--project-presence',String(projectPresence));
-  document.documentElement.style.setProperty('--contact-presence',String(visibility(contact)));
-  document.documentElement.style.setProperty('--hero-presence',String(Math.max(clamp(1-window.scrollY/(vh*.85)),homeGap.top<=vh&&homeGap.bottom>0?1-home.fill:0)));
-  if(reducedMotion.matches){cards.forEach(card=>{card.removeAttribute('aria-hidden');card.tabIndex=0});return}
-  // Reserve the end of the pinned section for cfast to settle before its exit.
-  const range=Math.max(1,section.offsetHeight-window.innerHeight*1.8);
-  const progress=Math.min(4,Math.max(0,(-rect.top/range)*4));
-  current=Math.round(progress);
-  cards.forEach((card,index)=>{
-    const delta=progress-index;
-    card.style.transform=`translateX(calc(-50% + ${-delta*112}%))`;
-    card.style.filter=`blur(${Math.min(9,Math.max(0,Math.abs(delta)-.32)*12)}px)`;
-    card.style.opacity=String(Math.max(.25,1-Math.max(0,Math.abs(delta)-.2)*.5));
-    card.style.zIndex=String(10-Math.round(Math.abs(delta)));
-    card.setAttribute('aria-hidden',index===current?'false':'true');
-    card.tabIndex=index===current?0:-1;
+function loadProjectArt() {
+  projectArtLoad ??= import('./project-visuals.js').then(module=>{
+    projectArt=module.startProjectIllustrations();
+    if(dialog.open)projectArt?.show(Number(dialog.dataset.index));
+  }).catch(error=>console.warn('Project illustrations unavailable',error));
+  return projectArtLoad;
+}
+let stackLoad;
+function loadStack() {
+  return stackLoad ??= import('./processor.js').then(module=>module.startProcessor()).catch(error=>{
+    console.warn('Processor illustration unavailable',error);
+    get('#assembly-range').hidden=true;
+    get('.assembly-caption label').textContent='Exploded processor assembly';
+    get('#assembly-detail').textContent='Heat spreader, silicon die, package substrate, and socket.';
   });
 }
-function openProject(index){
-  const p=projects[index];lastFocus=document.activeElement;dialog.dataset.project=p.name.toLowerCase();
+const nearStack=new IntersectionObserver(([entry])=>{
+  if(entry.isIntersecting){nearStack.disconnect();loadStack()}
+},{rootMargin:'100% 0px'});
+nearStack.observe(get('#stack'));
+async function prepareDestination(id) {
+  if(id==='projects') await loadProjectArt();
+  if(id==='stack') await loadStack();
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+}
+const nearProjects = new IntersectionObserver(([entry])=>{
+  if(entry.isIntersecting){nearProjects.disconnect();loadProjectArt()}
+},{rootMargin:'140% 0px'});
+nearProjects.observe(section);
 
-  document.querySelector('#dialog-title').textContent=p.name;
-  const description=document.querySelector('#dialog-description');
-  const features=document.querySelector('#dialog-features');
-  description.hidden=Boolean(p.features);
-  description.textContent=p.description;
-  features.hidden=!p.features;
-  features.replaceChildren();
-  p.features?.forEach(([label,detail])=>{
-    const item=document.createElement('li');
-    const heading=document.createElement('strong');
-    heading.textContent=`${label}: `;
-    item.append(heading,document.createTextNode(detail));
-    features.append(item);
-  });
-  document.querySelector('#dialog-stack').textContent=p.stack;
-  document.querySelector('#dialog-github').href=p.github;
-  const live=document.querySelector('#dialog-live');live.hidden=!p.live;if(p.live)live.href=p.live;
+function openProject(index) {
+  const p=projects[index];
+  lastFocus=cards[index];
+  dialog.dataset.project=p.name;dialog.dataset.index=index;
+  get('.dialog-figure').dataset.project=p.name;
+  get('#dialog-category').textContent=p.category;
+  get('#dialog-title').textContent=p.name;
+  get('#dialog-description').textContent=p.description;
+  get('#dialog-caption').textContent=p.caption;
+  get('#dialog-steps').replaceChildren(...sequenceLabels(p.steps));
+  get('#dialog-topics').textContent=p.topics.join(' · ');
+  get('#dialog-features').replaceChildren(...p.features.map(([name,detail])=>{
+    const row=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');
+    dt.textContent=name;dd.textContent=detail;row.append(dt,dd);return row;
+  }));
+  get('#dialog-stack').textContent=p.stack;
+  get('#dialog-github').href=p.github;
+  const live=get('#dialog-live');
+  live.href=p.live || p.github+'#readme';
+  live.textContent=p.live?'Visit website ↗':'Project overview ↗';
+  const canvas=get('#dialog-canvas');
+  const context=canvas.getContext('2d');
+  context.clearRect(0,0,canvas.width,canvas.height);
+  context.drawImage(cards[index].querySelector('canvas'),0,0,canvas.width,canvas.height);
+  dialog.showModal();dialog.scrollTop=0;document.body.style.overflow='hidden';
   showProjectBackground(index);
-  dialog.showModal();document.body.style.overflow='hidden';
+  if(projectArt)projectArt.show(index);else loadProjectArt();
 }
-function navigationTop(id){
-  if(id==='home')return 0;
-  if(id==='about'){
-    const intro=document.querySelector('.intro-sequence');
-    return scrollY+intro.getBoundingClientRect().top
-      +document.querySelector('.hero-frame').offsetHeight-innerHeight;
-  }
-  // Sticky sections move inside their frames; the frames retain stable anchors.
-  const target=id==='experience'?document.querySelector('.experience-frame'):document.getElementById(id);
-  return scrollY+target.getBoundingClientRect().top;
-}
-function navigateTo(id,{behavior=reducedMotion.matches?'instant':'smooth',replaceHash=true}={}){
-  const top=Math.max(0,navigationTop(id));
-  if(replaceHash)history.replaceState(null,'',`#${id}`);
-  document.dispatchEvent(new CustomEvent('portfolio:navigate',{detail:{section:id,top}}));
-  window.scrollTo({top,behavior});
-  updateProjects();
-  updateActiveNav();
-}
-document.querySelectorAll('.nav a').forEach(link=>link.addEventListener('click',event=>{
-  event.preventDefault();
-  navigateTo(link.hash.slice(1));
-}));
-document.querySelector('footer a[href="#home"]').addEventListener('click',event=>{
-  event.preventDefault();
-  navigateTo('home');
+get('#close-dialog').addEventListener('click',()=>dialog.close());
+dialog.addEventListener('close',()=>{
+  projectArt?.hide();hideProjectBackground();document.body.style.overflow='';lastFocus?.focus({preventScroll:true});
 });
-document.querySelector('#close-dialog').addEventListener('click',()=>dialog.close());
-dialog.addEventListener('close',()=>{hideProjectBackground();document.body.style.overflow='';lastFocus?.focus({preventScroll:true})});
-window.addEventListener('scroll',updateProjects,{passive:true});window.addEventListener('resize',updateProjects);reducedMotion.addEventListener('change',updateProjects);updateProjects();
-const navLinks=[...document.querySelectorAll('.nav a')];
-function updateActiveNav(){
-  const threshold=window.innerHeight*.55;
-  const contact=document.querySelector('#contact').getBoundingClientRect();
-  const experience=document.querySelector('#experience').getBoundingClientRect();
-  const projects=section.getBoundingClientRect();
-  const nearBottom=window.scrollY+window.innerHeight>=document.documentElement.scrollHeight-4;
+
+function projectRange(){return Math.max(1,section.offsetHeight-innerHeight*1.3)}
+function navigateProject(index) {
+  const top=scrollY+section.getBoundingClientRect().top+index*projectRange()/(projects.length-1);
+  window.scrollTo({top,behavior:reduced.matches?'instant':'smooth'});
+}
+prev.addEventListener('click',()=>navigateProject(current-1));
+next.addEventListener('click',()=>navigateProject(current+1));
+function update() {
+  const vh=innerHeight;
+  const aboutRect=about.getBoundingClientRect(),exp=experience.getBoundingClientRect();
+  const projectsRect=section.getBoundingClientRect(),contactRect=contact.getBoundingClientRect();
+  const home=clamp((vh-gap.getBoundingClientRect().top)/Math.max(1,gap.offsetHeight));
+  const presence=r=>smooth((vh-r.top)/(vh*.65))*smooth(r.bottom/(vh*.75));
+  const aboutReveal=reduced.matches?1:smooth((home-.68)/.27);
+  root.style.setProperty('--about-reveal',aboutReveal);
+  stackPanel.style.setProperty('--stack-pin-top',Math.min(0,vh-stackPanel.offsetHeight)+'px');
+  const grid=Math.max(presence(aboutRect)*aboutReveal,presence(exp));
+  const exit=reduced.matches?0:smooth((vh-projectGap.getBoundingClientRect().top)/(vh*.82));
+  root.style.setProperty('--wash',grid);
+  root.style.setProperty('--section-grid',grid);
+  root.style.setProperty('--pixel-fill',Math.sin(exit*Math.PI));
+  root.style.setProperty('--pixel-transition',Math.sin(exit*Math.PI));
+  root.style.setProperty('--exit-project',exit);
+  root.style.setProperty('--hero-presence',1-home);
+  root.style.setProperty('--project-presence',presence(projectsRect));
+  root.style.setProperty('--contact-presence',presence(contactRect));
+  root.style.setProperty('--experience-reveal',smooth((vh-exp.top)/(vh*.65)));
+  root.style.setProperty('--experience-departure',smooth(exp.bottom/(vh*.65)));
+  experience.style.setProperty('--experience-pin-top',Math.min(0,vh-experience.offsetHeight)+'px');
+  const position=clamp(-projectsRect.top/projectRange())*(projects.length-1);
+  current=Math.round(position);
+  cards.forEach((card,index)=>{
+    const offset=index-position, distance=Math.abs(offset);
+    const selected=reduced.matches||index===current;
+    card.tabIndex=selected?0:-1;card.setAttribute('aria-hidden',String(!selected));
+    if(reduced.matches)return;
+    card.style.transform='translate(-50%,-50%) translateX('+offset*105+'%) translateZ('+(-Math.min(distance,1.5)*130)+'px) rotateY('+(-Math.max(-1,Math.min(offset,1))*17)+'deg)';
+    card.style.opacity=String(1-Math.min(.62,distance*.42));
+    card.style.zIndex=String(8-Math.round(distance));
+  });
+  counter.textContent=String(current+1).padStart(2,'0')+' / '+String(projects.length).padStart(2,'0');
+  prev.disabled=current===0;next.disabled=current===projects.length-1;
   let active='about';
-  if(projects.top<=threshold)active='projects';
-  if(experience.top<=threshold)active='experience';
-  if(contact.top<=threshold||nearBottom)active='contact';
+  for (const dest of destinations) if(dest.getBoundingClientRect().top<vh*.55)active=dest.id;
   navLinks.forEach(link=>{
-    const selected=link.hash===`#${active}`;
+    const selected=link.hash==='#'+active;
     link.classList.toggle('active',selected);
     if(selected)link.setAttribute('aria-current','location');else link.removeAttribute('aria-current');
   });
-}
-window.addEventListener('scroll',updateActiveNav,{passive:true});
-window.addEventListener('resize',updateActiveNav);
-updateActiveNav();
+  if(!root.classList.contains('has-fracture')) {
+    get('.hero-copy').style.opacity=reduced.matches?'1':String(1-smooth(home/.48));
 
-// Resolve direct section links after fonts have settled the section heights.
-const initialSection=location.hash.slice(1);
-if(['about','projects','experience','contact'].includes(initialSection)){
-  document.fonts.ready.then(()=>{
-    if(location.hash===`#${initialSection}`)navigateTo(initialSection,{behavior:'instant',replaceHash:false});
-  });
+  }
 }
-window.addEventListener('hashchange',()=>{
-  const id=location.hash.slice(1);
-  if(['home','about','projects','experience','contact'].includes(id))navigateTo(id,{replaceHash:false});
+let updateFrame=0;
+function requestUpdate(){if(!updateFrame)updateFrame=requestAnimationFrame(()=>{updateFrame=0;update()})}
+window.addEventListener('scroll',requestUpdate,{passive:true});
+window.addEventListener('resize',requestUpdate);reduced.addEventListener('change',requestUpdate);
+
+function navigate(id,behavior) {
+  const target=id==='experience'?get('.experience-frame'):document.getElementById(id);
+  if(!target)return;
+  let top=id==='home'?0:scrollY+target.getBoundingClientRect().top;
+  if(id==='stack'&&!reduced.matches)top+=Math.max(0,target.offsetHeight-get('.stack-panel').offsetHeight)*.55;
+  window.scrollTo({top,behavior});
+}
+const sectionIds=['home','stack',...destinations.map(dest=>dest.id)];
+const visit=createSectionTransition(async id=>{
+  history.replaceState(null,'','#'+id);
+  navigate(id,'instant');
+  update();
+  await prepareDestination(id);
 });
-
-import('./visuals.js');
-import('./hero-transition.js');
+document.querySelectorAll('a[href^="#"]').forEach(link=>link.addEventListener('click',event=>{
+  if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey||link.classList.contains('skip'))return;
+  event.preventDefault();
+  visit(link.hash.slice(1),link.hash==='#home'?'Dhruv Shah':link.textContent.trim());
+}));
+window.addEventListener('hashchange',()=>navigate(location.hash.slice(1),'instant'));
+update();
+progress(30);
+async function prepareIntro() {
+  const font=document.fonts.load('500 24px "DM Sans"');
+  const field=import('./visuals.js?v=assembly');
+  const fracture=import('./hero-transition.js?v=assembly').then(module=>module.ready);
+  let settled=0;
+  await Promise.allSettled([font,field,fracture].map(job=>job.finally(()=>progress(30+ ++settled*20))));
+  const id=location.hash.slice(1);
+  if(sectionIds.includes(id)){
+    navigate(id,'instant');
+    await prepareDestination(id);
+  }
+  update();
+  requestAnimationFrame(()=>progress(100));
+}
+prepareIntro();
