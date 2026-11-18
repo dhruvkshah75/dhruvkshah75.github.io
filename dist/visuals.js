@@ -22,13 +22,17 @@ try {
       void main(){
         vec2 px=(position.xy*.5+.5)*uResolution;
         float edge=min(min(px.x,uResolution.x-px.x),min(px.y,uResolution.y-px.y));
-        float contour=85.0 + 58.0*uHome + 22.0*sin(px.x*.009+px.y*.013) + 36.0*sin(px.x*.018-px.y*.011);
-        contour=mix(contour,contour*.55,max(uProject,uContact));
-        contour+=70.0*uStack;
+        float variation=22.0*sin(px.x*.009+px.y*.013) + 36.0*sin(px.x*.018-px.y*.011);
+        float contour=85.0 + 58.0*uHome + variation;
+        contour=mix(contour,contour*.55,uProject)+70.0*uStack;
         float mobile=1.0-smoothstep(380.0,700.0,uResolution.x);
         contour=mix(contour,min(contour,50.0),mobile);
+        // Let Contact's border reach inward while keeping a clear center on narrow screens.
+        float contactDepth=clamp(min(uResolution.x,uResolution.y)*.24,82.0,228.0);
+        contour=mix(contour,contactDepth+variation*.45,uContact);
         contour=mix(contour,max(uResolution.x,uResolution.y)*.8,uFill);
-        float band=1.0-smoothstep(contour*.45,contour+mix(mix(90.0,48.0,max(uProject,uContact)),45.0,mobile),edge);
+        float feather=mix(mix(90.0,48.0,uProject),108.0,uContact);
+        float band=1.0-smoothstep(contour*.45,contour+mix(feather,45.0,mobile),edge);
         float activeEdge=smoothstep(contour*.35,contour+20.0,edge);
         float twinkle=mix(.5+.5*sin(uTime*1.9+seed*12.0+px.x*.025+px.y*.018),.5,uSection);
         float nearMouse=1.0-smoothstep(0.0,170.0,distance(px,uMouse));

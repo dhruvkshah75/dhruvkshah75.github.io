@@ -251,7 +251,7 @@ async function prepareIntro() {
   }
   await Promise.all([
     track('interface',document.fonts.load('500 24px "DM Sans"'),()=> 'Ready'),
-    track('field',import('./visuals.js?v=revision'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
+    track('field',import('./visuals.js?v=contact'),()=> root.classList.contains('has-field')?'Online':'Fallback'),
     track('scene',import('./hero-transition.js?v=revision').then(module=>module.ready),
       ()=> root.classList.contains('has-fracture')?'Online':'Static')
   ]);
